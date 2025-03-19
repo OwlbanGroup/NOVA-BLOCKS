@@ -8,10 +8,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "express": "^4.21.2",
-    "mongoose": "^8.12.1",
-    "morgan": "^1.10.0"
+    "express": "^4.17.1",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "mongoose": "^5.10.9",
+    "pqcrypto": "^1.0.0"
   }
 }

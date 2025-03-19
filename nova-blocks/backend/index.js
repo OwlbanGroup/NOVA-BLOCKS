@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
 const PORT = process.env.PORT || 5000;
+const pqCrypto = require('pqcrypto'); // Importing post-quantum cryptography library
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/novablocks', {
@@ -35,6 +36,15 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
+});
+
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+    // Use post-quantum cryptography for password hashing
+    const hashedPassword = await pqCrypto.hash(password);
+    // Save user to the database (pseudo code)
+    // await User.create({ username, password: hashedPassword });
+    res.send('User registered successfully!');
 });
 
 // Basic route
