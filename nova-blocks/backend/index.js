@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/novablocks', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/novablocks', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
