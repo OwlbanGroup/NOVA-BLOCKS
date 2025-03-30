@@ -1,25 +1,31 @@
 import React, { useState } from 'react';
+import FileInput from './FileInput'; // New component for file input
+import LoadingIndicator from './LoadingIndicator'; // New component for loading indicator
+
 import { Canvas } from 'react-three-fiber'; // Import for 3D model rendering
 
 const Upload = () => {
-    const [modelFile, setModelFile] = useState(null); // State for model file
+    const [modelFile, setModelFile] = useState(null);
+    const [fileInputError, setFileInputError] = useState(''); // State for file input error
+
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false); // State for success message
     const [loading, setLoading] = useState(false); // State for loading indicator
     const [previewUrl, setPreviewUrl] = useState('');
 
-    const handleFileChange = (event) => {
-        const file = event.target.files[0];
-        if (file && (file.type === 'model/stl' || file.type === 'model/obj')) { // Check for 3D model types
+    const handleFileChange = (file) => {
+        if (file && (file.type === 'model/stl' || file.type === 'model/obj')) {
             setModelFile(file);
-            setError('');
-            setPreviewUrl(URL.createObjectURL(file)); // Create a preview URL
+            setFileInputError('');
+            setPreviewUrl(URL.createObjectURL(file));
         } else {
-            setError('Please select a valid 3D model file.'); // Update error message
+            setFileInputError('Please select a valid 3D model file.');
             setModelFile(null);
             setPreviewUrl('');
         }
     };
+
+
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -42,7 +48,8 @@ const Upload = () => {
         <div>
             <h1>Upload 3D Model</h1> {/* Update heading */}
             <form onSubmit={handleSubmit}>
-                <input type="file" accept=".stl,.obj" onChange={handleFileChange} /> {/* Change accepted file types */}
+                <FileInput accept=".stl,.obj" onFileChange={handleFileChange} /> {/* Use new FileInput component */}
+
 
                 {error && <p style={{ color: 'red' }}>{error}</p>} {/* Display error message */}
                 {previewUrl && <Canvas>
@@ -51,7 +58,8 @@ const Upload = () => {
 
                 <button type="submit" disabled={!modelFile}>Upload</button> {/* Disable button if no file is selected */}
                 {success && <p style={{ color: 'green' }}>3D model uploaded successfully!</p>} {/* Display success message */}
-                {loading && <p>Uploading...</p>} {/* Display loading indicator */}
+                <LoadingIndicator loading={loading} /> {/* Use new LoadingIndicator component */}
+
             </form>
         </div>
     );

@@ -1,10 +1,20 @@
 const errorHandler = (err, req, res, next) => {
     console.error(`Error occurred at ${req.method} ${req.url}:`, err.stack);
-    const responseMessage = process.env.NODE_ENV === 'production' 
-        ? 'An error occurred' 
-        : { message: 'An error occurred', error: err.message };
-    res.status(500).json(responseMessage);
+    let statusCode = 500;
+    let responseMessage = { message: 'An error occurred' };
+
+    if (err.status) {
+        statusCode = err.status;
+        responseMessage.message = err.message || responseMessage.message;
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+        responseMessage.error = err.message;
+    }
+
+    res.status(statusCode).json(responseMessage);
 };
+
 
 
 module.exports = errorHandler;
