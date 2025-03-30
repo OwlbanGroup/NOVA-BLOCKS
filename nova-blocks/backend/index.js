@@ -40,12 +40,16 @@ app.use((err, req, res, next) => {
 
 app.post('/register', async (req, res) => {
     const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).send('Username and password are required.');
+    }
     // Use post-quantum cryptography for password hashing
     const hashedPassword = await pqCrypto.hash(password);
     // Save user to the database (pseudo code)
     // await User.create({ username, password: hashedPassword });
-    res.send('User registered successfully!');
+    res.status(201).send('User registered successfully!');
 });
+
 
 // Basic route
 app.get('/', (req, res) => {
