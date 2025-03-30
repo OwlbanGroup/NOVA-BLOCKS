@@ -1,11 +1,15 @@
 import React from 'react';
+import ChatComponent from './ChatComponent'; // Importing the new ChatComponent
+
 import LionOfJudahJewelry from './LionOfJudahJewelry';
 import QuantumHealthyElementJewelry from './QuantumHealthyElementJewelry';
 
 const App = () => {
     return (
         <div>
-            <LionOfJudahJewelry />
+        <LionOfJudahJewelry />
+        <ChatComponent />  // Adding the ChatComponent to the main application
+
             <QuantumHealthyElementJewelry />
         </div>
     );
