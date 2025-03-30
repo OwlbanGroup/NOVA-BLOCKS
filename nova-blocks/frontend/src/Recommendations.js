@@ -17,6 +17,10 @@ const Recommendations = () => {
                 setRecommendations(data);
             } catch (error) {
                 console.error('Error fetching recommendations:', error);
+                setResult('An error occurred while fetching recommendations. Please try again.'); // Set user-friendly error message
+
+                setResult('An error occurred while fetching recommendations. Please try again.'); // Set user-friendly error message
+
             } finally {
                 setLoading(false); // Set loading to false after fetching
             }

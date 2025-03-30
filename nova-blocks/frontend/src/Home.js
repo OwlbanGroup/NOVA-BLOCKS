@@ -36,13 +36,14 @@ const Home = () => {
             <p>Explore and share videos with the community!</p>
             <a href="/ai-food-printing">Try the AI Food Printing Feature!</a> {/* Link to AI food printing feature */}
             <div>
-                <input 
+                <input
+                    aria-label="Search videos or users" // Add ARIA label for accessibility
                     type="text" 
                     placeholder="Search videos or users..." 
                     value={searchTerm} 
                     onChange={handleSearchChange} 
                 /> {/* Search bar */}
-                <ul> {/* Display search results */}
+                <ul role="list"> {/* Add role for accessibility */}
                     {searchResults.map(result => (
                         <li key={result.id}>{result.title}</li> // Display search results
                     ))}

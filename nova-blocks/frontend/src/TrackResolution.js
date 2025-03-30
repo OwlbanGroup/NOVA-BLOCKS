@@ -17,6 +17,10 @@ const TrackResolution = () => {
                 setRoadblocks(data);
             } catch (error) {
                 console.error('Error fetching roadblocks:', error);
+                setResult('An error occurred while fetching roadblocks. Please try again.'); // Set user-friendly error message
+
+                setResult('An error occurred while fetching roadblocks. Please try again.'); // Set user-friendly error message
+
             } finally {
                 setLoading(false); // Set loading to false after fetching
             }

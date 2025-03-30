@@ -8,7 +8,8 @@ const AiSuperFoodPaste = () => {
 
 
     const handleInputChange = (event) => {
-        setIngredients(event.target.value);
+        setIngredients(event.target.value); // Update ingredients input
+
     };
 
     const handleSubmit = async (event) => {
@@ -29,7 +30,8 @@ const AiSuperFoodPaste = () => {
             setResult(data.message); // Assuming the backend returns a message
         } catch (error) {
             console.error('Error creating food paste:', error);
-            setResult('Failed to create food paste. Please try again.'); // Set error message
+            setResult('An error occurred while creating the food paste. Please check your ingredients and try again.'); // Set user-friendly error message
+
         } finally {
             setLoading(false); // Set loading to false after submission
         }
@@ -43,7 +45,9 @@ const AiSuperFoodPaste = () => {
         <div>
             <h1>Create AI Super Food Paste</h1>
             <form onSubmit={handleSubmit}>
-                <textarea
+            <textarea
+                aria-label="Ingredients input" // Add ARIA label for accessibility
+
                     value={ingredients}
                     onChange={handleInputChange}
                     placeholder="Enter ingredients here..."
@@ -52,7 +56,9 @@ const AiSuperFoodPaste = () => {
 
             </form>
             {loading && <LoadingIndicator loading={loading} />} {/* Show loading indicator */}
-            {result && <p>{result}</p>} 
+            {loading && <LoadingIndicator loading={loading} />} {/* Show loading indicator */}
+            {result && <p>{result}</p>} {/* Display result message */}
+
 
         </div>
     );
