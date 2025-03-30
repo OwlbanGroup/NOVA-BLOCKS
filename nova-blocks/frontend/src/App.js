@@ -2,6 +2,8 @@ import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './Navbar'; // Importing the Navbar component
+import Recommendations from './Recommendations'; // Importing the Recommendations component
+
 
 
 function App() {
@@ -10,7 +12,9 @@ function App() {
       <div className="App">
         <Navbar /> {/* Adding the Navbar component */}
         <h1>NOVA BLOCKS</h1>
+        <Recommendations /> {/* Adding the Recommendations component */}
         <Routes>
+
           <Route path="/" element={<Home />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/profile" element={<Profile />} />

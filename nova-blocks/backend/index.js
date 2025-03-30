@@ -51,10 +51,21 @@ app.post('/register', async (req, res) => {
 });
 
 
+app.get('/api/recommendations', (req, res) => {
+    // Placeholder for recommendations data
+    const recommendations = [
+        { id: 1, title: 'Video 1', url: 'path/to/video1.mp4' },
+        { id: 2, title: 'Video 2', url: 'path/to/video2.mp4' },
+        { id: 3, title: 'Video 3', url: 'path/to/video3.mp4' },
+    ];
+    res.json(recommendations); // Send recommendations as JSON
+});
+
 // Basic route
 app.get('/', (req, res) => {
     res.send('Welcome to the NOVA BLOCKS backend!');
 });
+
 
 // Start the server
 app.listen(PORT, () => {

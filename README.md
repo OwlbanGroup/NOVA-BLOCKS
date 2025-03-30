@@ -118,6 +118,10 @@ To deploy the NOVA BLOCKS application to the MOOLA CLOUD, follow these steps:
 
 ## Features
 
+- **AI Recommendations**: The application provides personalized video recommendations based on user behavior.
+- **Search Functionality**: Users can search for videos and users using the search bar on the home page.
+
+
 - **User Authentication**: Users can register and log in to their accounts.
 - **Video Uploading**: Users can upload videos to share with the community.
 - **Video Feed Display**: Users can view a feed of videos uploaded by others.
@@ -131,6 +135,13 @@ To deploy the NOVA BLOCKS application to the MOOLA CLOUD, follow these steps:
 - User profiles
 
 ## Future Improvements
+
+- Implement user authentication with JWT for secure sessions.
+- Add video upload functionality with progress indicators.
+- Create a video feed that displays trending and recent videos.
+- Implement user profiles with customizable settings.
+- Enhance AI recommendations with machine learning algorithms for better personalization.
+
 
 - Implement user authentication with JWT for secure sessions.
 - Add video upload functionality with progress indicators.
