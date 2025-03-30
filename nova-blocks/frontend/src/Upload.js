@@ -5,7 +5,9 @@ import LoadingIndicator from './LoadingIndicator'; // New component for loading 
 import { Canvas } from 'react-three-fiber'; // Import for 3D model rendering
 
 const Upload = () => {
-    const [modelFile, setModelFile] = useState(null);
+const [modelFile, setModelFile] = useState(null);
+const [imageFile, setImageFile] = useState(null); // State for image file
+
     const [fileInputError, setFileInputError] = useState(''); // State for file input error
 
     const [error, setError] = useState('');
@@ -14,10 +16,19 @@ const Upload = () => {
     const [previewUrl, setPreviewUrl] = useState('');
 
     const handleFileChange = (file) => {
-        if (file && (file.type === 'model/stl' || file.type === 'model/obj')) {
+if (file && (file.type === 'model/stl' || file.type === 'model/obj' || file.type.startsWith('image/'))) {
+    if (file.type.startsWith('image/')) {
+        setImageFile(file); // Set image file
+        setModelFile(null); // Clear model file
+    } else {
+        setModelFile(file);
+        setImageFile(null); // Clear image file
+    }
+
             setModelFile(file);
             setFileInputError('');
-            setPreviewUrl(URL.createObjectURL(file));
+setPreviewUrl(URL.createObjectURL(file)); // Set preview URL for both model and image
+
         } else {
             setFileInputError('Please select a valid 3D model file.');
             setModelFile(null);
@@ -29,13 +40,15 @@ const Upload = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        if (!modelFile) {
+if (!modelFile && !imageFile) { // Check for both model and image files
+
             setError('Please select a 3D model file to upload.'); // Update error message
             return;
         }
         setLoading(true); // Start loading
         setError(''); // Clear previous errors
-        console.log('Uploading:', modelFile); // Log the model file
+console.log('Uploading:', modelFile || imageFile); // Log the model or image file
+
 
         // Simulate upload process
         setTimeout(() => {

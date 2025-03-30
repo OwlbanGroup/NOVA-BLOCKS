@@ -12,7 +12,9 @@ const Home = () => {
             <h1>Welcome to NOVA BLOCKS</h1>
             <a href="/hoverboard">Go to AI Hoverboard</a> {/* Link to navigate to the hoverboard feature */}
 
-            <p>Explore and share videos with the community!</p>
+<p>Explore and share videos with the community!</p>
+<a href="/ai-food-printing">Try the AI Food Printing Feature!</a> {/* Link to AI food printing feature */}
+
             <input 
                 type="text" 
                 placeholder="Search videos or users..." 

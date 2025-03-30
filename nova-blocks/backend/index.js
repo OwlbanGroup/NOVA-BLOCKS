@@ -90,14 +90,23 @@ app.post('/api/solutions', (req, res) => {
     res.status(201).send('Solution suggested successfully!');
 });
 
-app.post('/api/upload-model', (req, res) => {
-    const modelFile = req.files.model; // Assuming you're using a file upload middleware like multer
+app.post('/api/create-food-paste', (req, res) => {
+
+
+    const ingredients = req.body.ingredients; // Get ingredients from the request body
+    if (!ingredients) {
+        return res.status(400).send('No ingredients provided.');
+    }
+
+
     if (!modelFile) {
         return res.status(400).send('No file uploaded.');
     }
-    // Logic to save the model file to the server or cloud storage
-    // Example: await saveModelFile(modelFile);
-    res.status(201).send('3D model uploaded successfully!');
+    // Logic to create the food paste from the ingredients
+    // Example: await createFoodPaste(ingredients);
+    res.status(201).send('AI super food paste created successfully!');
+
+
 });
 
 // Basic route
