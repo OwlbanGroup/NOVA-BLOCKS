@@ -38,7 +38,8 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
-app.post('/register', async (req, res) => {
+app.post('/api/arena/create', async (req, res) => {
+
     const { username, password } = req.body;
     if (!username || !password) {
         return res.status(400).send('Username and password are required.');
@@ -50,7 +51,8 @@ app.post('/register', async (req, res) => {
     res.status(201).send('User registered successfully!');
 });
 
-app.get('/api/recommendations', (req, res) => {
+app.get('/api/arena/:id', (req, res) => {
+
     // Placeholder for recommendations data
     const recommendations = [
         { id: 1, title: 'Video 1', url: 'path/to/video1.mp4' },
@@ -60,7 +62,8 @@ app.get('/api/recommendations', (req, res) => {
     res.json(recommendations); // Send recommendations as JSON
 });
 
-app.post('/api/roadblocks', (req, res) => {
+app.post('/api/arena/join', (req, res) => {
+
     const { description } = req.body;
     if (!description) {
         return res.status(400).send('Description is required.');
@@ -70,7 +73,8 @@ app.post('/api/roadblocks', (req, res) => {
     res.status(201).send('Roadblock reported successfully!');
 });
 
-app.get('/api/roadblocks', (req, res) => {
+app.get('/api/gaming/recommendations', (req, res) => {
+
     // Placeholder for fetching roadblocks from the database (pseudo code)
     const roadblocks = [
         { id: 1, description: 'Example roadblock', status: 'Reported' },
@@ -79,7 +83,8 @@ app.get('/api/roadblocks', (req, res) => {
     res.json(roadblocks); // Send roadblocks as JSON
 });
 
-app.post('/api/solutions', (req, res) => {
+app.post('/api/pc/create', async (req, res) => {
+
     const { solution } = req.body;
     if (!solution) {
         return res.status(400).send('Solution is required.');
@@ -89,7 +94,8 @@ app.post('/api/solutions', (req, res) => {
     res.status(201).send('Solution suggested successfully!');
 });
 
-app.post('/api/create-food-paste', async (req, res) => {
+app.get('/api/pc/:id', (req, res) => {
+
     const { ingredients } = req.body; // Get ingredients from the request body
     if (!ingredients || ingredients.trim() === '') {
         return res.status(400).send('No valid ingredients provided.');
@@ -105,11 +111,22 @@ app.post('/api/create-food-paste', async (req, res) => {
 });
 
 // Basic route
-app.get('/', (req, res) => {
+app.post('/api/pc/join', (req, res) => {
+
     res.send('Welcome to the NOVA BLOCKS backend!');
 });
 
-// Start the server
+app.get('/api/arena/recommendations', (req, res) => {
+    // Placeholder for arena recommendations
+    const arenaRecommendations = [
+        { id: 1, title: 'Arena Experience 1', description: 'Description for experience 1' },
+        { id: 2, title: 'Arena Experience 2', description: 'Description for experience 2' },
+    ];
+    res.json(arenaRecommendations); // Send arena recommendations as JSON
+
+
+}); // Closing the last route
 app.listen(PORT, () => {
+
     console.log(`Server is running on http://localhost:${PORT}`);
 });
