@@ -50,7 +50,6 @@ app.post('/register', async (req, res) => {
     res.status(201).send('User registered successfully!');
 });
 
-
 app.get('/api/recommendations', (req, res) => {
     // Placeholder for recommendations data
     const recommendations = [
@@ -90,32 +89,25 @@ app.post('/api/solutions', (req, res) => {
     res.status(201).send('Solution suggested successfully!');
 });
 
-app.post('/api/create-food-paste', (req, res) => {
-
-
-    const ingredients = req.body.ingredients; // Get ingredients from the request body
-    if (!ingredients) {
-        return res.status(400).send('No ingredients provided.');
+app.post('/api/create-food-paste', async (req, res) => {
+    const { ingredients } = req.body; // Get ingredients from the request body
+    if (!ingredients || ingredients.trim() === '') {
+        return res.status(400).send('No valid ingredients provided.');
     }
 
-
-    if (!modelFile) {
-        return res.status(400).send('No file uploaded.');
-    }
     // Logic to create the food paste from the ingredients
-    // Example: await createFoodPaste(ingredients);
+    const foodPaste = `Created food paste with: ${ingredients}`;
+    // Here you can implement further processing or storage of foodPaste
+
+    // Here you can implement the logic to process the ingredients and create the food paste.
+    
     res.status(201).send('AI super food paste created successfully!');
-
-
 });
 
 // Basic route
-
 app.get('/', (req, res) => {
     res.send('Welcome to the NOVA BLOCKS backend!');
 });
-
-
 
 // Start the server
 app.listen(PORT, () => {
