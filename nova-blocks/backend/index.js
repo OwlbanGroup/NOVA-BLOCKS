@@ -110,7 +110,8 @@ app.get('/api/pc/:id', (req, res) => {
     res.status(201).send('AI super food paste created successfully!');
 });
 
-// Basic route
+app.use('/api', require('./payment')); // Integrating payment route
+
 app.post('/api/pc/join', (req, res) => {
 
     res.send('Welcome to the NOVA BLOCKS backend!');

@@ -2,6 +2,8 @@ import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Arena from './Arena'; // Importing the Arena component
+import Payment from './Payment'; // Importing the Payment component
+
 import ArenaDetails from './ArenaDetails'; // Importing the ArenaDetails component
 import JoinArena from './JoinArena'; // Importing the JoinArena component
 import Gaming from './Gaming'; // Importing the Gaming component
@@ -41,6 +43,8 @@ function App() {
 
 <Route path="/profile" element={<Profile />} />
           <Route path="/arena" element={<Arena />} /> {/* New route for Arena */}
+          <Route path="/payment" element={<Payment />} /> {/* New route for Payment */}
+
           <Route path="/arena/:id" element={<ArenaDetails />} /> {/* New route for Arena Details */}
           <Route path="/arena/join" element={<JoinArena />} /> {/* New route for joining Arena */}
           <Route path="/gaming" element={<Gaming />} /> {/* New route for Gaming */}
