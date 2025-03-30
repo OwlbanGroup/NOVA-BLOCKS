@@ -3,6 +3,8 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './Navbar'; // Importing the Navbar component
 import Recommendations from './Recommendations'; // Importing the Recommendations component
+import HealthySuperElements from './HealthySuperElements'; // Importing the HealthySuperElements component
+
 
 
 
@@ -18,7 +20,9 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/healthy-super-elements" element={<HealthySuperElements />} /> {/* Adding route for HealthySuperElements */}
         </Routes>
+
       </div>
     </Router>
   );
