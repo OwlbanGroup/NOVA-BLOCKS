@@ -120,6 +120,14 @@ To deploy the NOVA BLOCKS application to the MOOLA CLOUD, follow these steps:
 
 - **AI Recommendations**: The application provides personalized video recommendations based on user behavior.
 - **Search Functionality**: Users can search for videos and users using the search bar on the home page.
+- **Roadblock Reporting**: Users can report roadblocks they encounter while using the application.
+- **Track Roadblock Resolutions**: Users can track the status of reported roadblocks.
+- **Suggest Solutions**: Users can suggest solutions for common roadblocks.
+- **Minecraft Integration**: Features for sharing Minecraft-related content and community engagement.
+
+
+- **AI Recommendations**: The application provides personalized video recommendations based on user behavior.
+- **Search Functionality**: Users can search for videos and users using the search bar on the home page.
 
 
 - **User Authentication**: Users can register and log in to their accounts.
@@ -135,6 +143,14 @@ To deploy the NOVA BLOCKS application to the MOOLA CLOUD, follow these steps:
 - User profiles
 
 ## Future Improvements
+
+- Implement user authentication with JWT for secure sessions.
+- Add video upload functionality with progress indicators.
+- Create a video feed that displays trending and recent videos.
+- Implement user profiles with customizable settings.
+- Enhance AI recommendations with machine learning algorithms for better personalization.
+- Expand Minecraft features to include event tracking and community forums.
+
 
 - Implement user authentication with JWT for secure sessions.
 - Add video upload functionality with progress indicators.

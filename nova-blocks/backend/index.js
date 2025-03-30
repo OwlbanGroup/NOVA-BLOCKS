@@ -61,10 +61,40 @@ app.get('/api/recommendations', (req, res) => {
     res.json(recommendations); // Send recommendations as JSON
 });
 
+app.post('/api/roadblocks', (req, res) => {
+    const { description } = req.body;
+    if (!description) {
+        return res.status(400).send('Description is required.');
+    }
+    // Logic to save the roadblock report to the database (pseudo code)
+    // await Roadblock.create({ description, status: 'Reported' });
+    res.status(201).send('Roadblock reported successfully!');
+});
+
+app.get('/api/roadblocks', (req, res) => {
+    // Placeholder for fetching roadblocks from the database (pseudo code)
+    const roadblocks = [
+        { id: 1, description: 'Example roadblock', status: 'Reported' },
+        { id: 2, description: 'Another roadblock', status: 'Resolved' },
+    ];
+    res.json(roadblocks); // Send roadblocks as JSON
+});
+
+app.post('/api/solutions', (req, res) => {
+    const { solution } = req.body;
+    if (!solution) {
+        return res.status(400).send('Solution is required.');
+    }
+    // Logic to save the suggested solution to the database (pseudo code)
+    // await Solution.create({ solution });
+    res.status(201).send('Solution suggested successfully!');
+});
+
 // Basic route
 app.get('/', (req, res) => {
     res.send('Welcome to the NOVA BLOCKS backend!');
 });
+
 
 
 // Start the server
