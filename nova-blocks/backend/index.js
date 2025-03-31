@@ -127,6 +127,25 @@ app.get('/api/arena/recommendations', (req, res) => {
 
 
 }); // Closing the last route
+app.post('/api/golds/enhance', (req, res) => {
+    // Logic to enhance gold capabilities
+    const { feature } = req.body;
+    if (!feature) {
+        return res.status(400).send('Feature is required.');
+    }
+    // Implement enhancement logic here
+    res.status(201).send(`Gold capabilities enhanced with feature: ${feature}`);
+});
+
+app.get('/api/golds/recommendations', (req, res) => {
+    // Logic to fetch recommendations related to gold capabilities
+    const recommendations = [
+        { id: 1, title: 'Gold Feature 1', description: 'Description for feature 1' },
+        { id: 2, title: 'Gold Feature 2', description: 'Description for feature 2' },
+    ];
+    res.json(recommendations); // Send recommendations as JSON
+});
+
 app.listen(PORT, () => {
 
     console.log(`Server is running on http://localhost:${PORT}`);

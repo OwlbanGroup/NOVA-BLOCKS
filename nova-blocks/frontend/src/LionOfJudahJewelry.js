@@ -1,11 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios'; // Importing axios for API calls
 
 import React, { useEffect } from 'react';
 import { Canvas } from 'react-three-fiber'; // Importing 3D rendering library
 
 const LionOfJudahJewelry = () => {
+    const [recommendations, setRecommendations] = useState([]);
+
     useEffect(() => {
-        // AI-driven feature for personalized recommendations can be implemented here
+        const fetchRecommendations = async () => {
+            try {
+                const response = await axios.get('/api/golds/recommendations');
+                setRecommendations(response.data);
+            } catch (error) {
+                console.error('Error fetching recommendations:', error);
+            }
+        };
+
+        fetchRecommendations();
     }, []);
 
     return (

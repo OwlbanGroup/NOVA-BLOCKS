@@ -12,10 +12,14 @@ const authMiddleware = (req, res, next) => {
             return res.status(401).json({ message: 'Unauthorized' });
         }
         req.userId = decoded.id;
+
+        // Check for specific roles or permissions related to "GOLDS"
+        if (decoded.role && decoded.role !== 'admin') {
+            return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+        }
+
         next();
     });
 };
-
-
 
 module.exports = authMiddleware;

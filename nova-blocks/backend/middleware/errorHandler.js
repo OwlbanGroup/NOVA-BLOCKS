@@ -8,13 +8,16 @@ const errorHandler = (err, req, res, next) => {
         responseMessage.message = err.message || responseMessage.message;
     }
 
+    // Enhanced logging for "GOLDS" related errors
+    if (err.message.includes('GOLDS')) {
+        console.error(`GOLDS related error: ${err.message}`);
+    }
+
     if (process.env.NODE_ENV !== 'production') {
         responseMessage.error = err.message;
     }
 
     res.status(statusCode).json(responseMessage);
 };
-
-
 
 module.exports = errorHandler;
