@@ -14,7 +14,8 @@ const AiSuperFoodPaste = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setLoading(true); // Set loading to true when submitting
+        setLoading(true);
+        setResult('');
         try {
             const response = await fetch('/api/create-food-paste', {
                 method: 'POST',
@@ -23,22 +24,36 @@ const AiSuperFoodPaste = () => {
                 },
                 body: JSON.stringify({ ingredients }),
             });
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
+            
             const data = await response.json();
-            setResult(data.message); // Assuming the backend returns a message
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to create food paste');
+            }
+
+            // Display success message and analysis
+            setResult(
+                <div className="result-container">
+                    <h3>Food Paste Created!</h3>
+                    <p>{data.message}</p>
+                    <div className="analysis-section">
+                        <h4>Nutritional Analysis:</h4>
+                        <pre>{JSON.stringify(data.analysis, null, 2)}</pre>
+                    </div>
+                </div>
+            );
         } catch (error) {
             console.error('Error creating food paste:', error);
-            setResult('An error occurred while creating the food paste. Please check your ingredients and try again.'); // Set user-friendly error message
-
+            setResult(
+                <div className="error-message">
+                    <h3>Error</h3>
+                    <p>{error.message}</p>
+                    <p>Please check your ingredients and try again.</p>
+                </div>
+            );
         } finally {
-            setLoading(false); // Set loading to false after submission
+            setLoading(false);
         }
-
-
-        const data = await response.json();
-        setResult(data.message); // Assuming the backend returns a message
     };
 
     return (
@@ -55,9 +70,8 @@ const AiSuperFoodPaste = () => {
             <button type="submit" disabled={loading}>Create Food Paste</button> {/* Disable button while loading */}
 
             </form>
-            {loading && <LoadingIndicator loading={loading} />} {/* Show loading indicator */}
-            {loading && <LoadingIndicator loading={loading} />} {/* Show loading indicator */}
-            {result && <p>{result}</p>} {/* Display result message */}
+            {loading && <LoadingIndicator loading={loading} />}
+            {result}
 
 
         </div>

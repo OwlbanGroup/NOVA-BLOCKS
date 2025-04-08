@@ -113,8 +113,42 @@ app.get('/api/pc/:id', (req, res) => {
 app.use('/api', require('./payment')); // Integrating payment route
 
 app.post('/api/pc/join', (req, res) => {
-
     res.send('Welcome to the NOVA BLOCKS backend!');
+});
+
+// AI Super Food Paste endpoint
+app.post('/api/create-food-paste', async (req, res) => {
+    try {
+        const { ingredients } = req.body;
+        
+        // Input validation
+        if (!ingredients || typeof ingredients !== 'string' || ingredients.trim() === '') {
+            return res.status(400).json({ error: 'Valid ingredients string required' });
+        }
+
+        // Basic AI processing (will enhance with actual API calls)
+        const ingredientList = ingredients.split(',').map(i => i.trim());
+        const analysis = {
+            ingredients: ingredientList,
+            nutrition: {}, // Placeholder for API data
+            suggestions: [] // Placeholder for AI suggestions
+        };
+
+        // TODO: Add actual nutrition API integration
+        // Example: const nutritionData = await fetchNutritionData(ingredientList);
+        
+        res.json({
+            success: true,
+            message: `Created food paste with: ${ingredients}`,
+            analysis
+        });
+    } catch (error) {
+        console.error('Food paste creation error:', error);
+        res.status(500).json({ 
+            error: 'Failed to create food paste',
+            details: error.message 
+        });
+    }
 });
 
 app.get('/api/arena/recommendations', (req, res) => {
