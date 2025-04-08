@@ -1,0 +1,92 @@
+.game-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+    background-color: #1a1a1a;
+    color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.game-status {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+    font-size: 1.2rem;
+}
+
+.health-bars {
+    margin: 30px 0;
+}
+
+.health-bar {
+    height: 30px;
+    margin: 10px 0;
+    border-radius: 5px;
+    transition: width 0.3s ease;
+}
+
+.health-bar.player {
+    background-color: #4CAF50;
+}
+
+.health-bar.ai {
+    background-color: #f44336;
+}
+
+.game-btn {
+    padding: 12px 24px;
+    margin: 10px;
+    font-size: 1.1rem;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.game-btn:hover {
+    background-color: #555;
+}
+
+.game-btn.punch {
+    background-color: #ff5722;
+    font-weight: bold;
+    font-size: 1.3rem;
+    padding: 15px 30px;
+}
+
+.game-btn.punch:hover {
+    background-color: #e64a19;
+    transform: scale(1.05);
+}
+
+.result {
+    margin-top: 30px;
+}
+
+.result h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #ffeb3b;
+}
+
+@media (max-width: 600px) {
+    .game-container {
+        padding: 15px;
+    }
+    
+    .game-status {
+        flex-direction: column;
+    }
+    
+    .game-btn {
+        padding: 10px 20px;
+    }
+    
+    .game-btn.punch {
+        padding: 12px 24px;
+    }
+}

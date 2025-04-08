@@ -1,29 +1,36 @@
 import React from 'react';
-import ChatComponent from './ChatComponent'; // Importing the new ChatComponent
-import AlchemicalTransmutation from './AlchemicalTransmutation'; // Importing the new AlchemicalTransmutation component
-import ArmourOfGod from './ArmourOfGod'; // Importing the new ArmourOfGod component
-import FaithWalkers from './FaithWalkers'; // Importing the new FaithWalkers component
-
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ChatComponent from './ChatComponent';
+import AlchemicalTransmutation from './AlchemicalTransmutation';
+import ArmourOfGod from './ArmourOfGod';
+import FaithWalkers from './FaithWalkers';
 import LionOfJudahJewelry from './LionOfJudahJewelry';
 import QuantumHealthyElementJewelry from './QuantumHealthyElementJewelry';
-
-
-
+import Gaming from './Gaming';
+import Arena from './Arena';
+import GamingDetails from './GamingDetails';
+import JoinGaming from './JoinGaming';
 
 const App = () => {
     return (
-        <div>
-        <LionOfJudahJewelry />
-        <ChatComponent />  // Adding the ChatComponent to the main application
-        <AlchemicalTransmutation /> // Adding the AlchemicalTransmutation component to the main application
-        <ArmourOfGod /> // Adding the ArmourOfGod component to the main application
-        <FaithWalkers /> // Adding the FaithWalkers component to the main application
-
-
-
-
-            <QuantumHealthyElementJewelry />
-        </div>
+        <Router>
+            <Routes>
+                <Route path="/" element={
+                    <div>
+                        <LionOfJudahJewelry />
+                        <ChatComponent />
+                        <AlchemicalTransmutation />
+                        <ArmourOfGod />
+                        <FaithWalkers />
+                        <QuantumHealthyElementJewelry />
+                    </div>
+                }/>
+                <Route path="/gaming" element={<Gaming />} />
+                <Route path="/arena" element={<Arena />} />
+                <Route path="/gaming-details" element={<GamingDetails />} />
+                <Route path="/join-gaming" element={<JoinGaming />} />
+            </Routes>
+        </Router>
     );
 };
 
