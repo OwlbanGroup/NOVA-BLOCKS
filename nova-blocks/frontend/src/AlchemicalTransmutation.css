@@ -1,0 +1,20 @@
+.color-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.color-swatch {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    color: white;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+    font-weight: bold;
+}

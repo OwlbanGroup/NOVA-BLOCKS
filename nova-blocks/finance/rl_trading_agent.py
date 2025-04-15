@@ -1,9 +1,22 @@
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras.optimizers import Adam
+import torch
+import torch.nn as nn
+import torch.optim as optim
 from collections import deque
 import random
+
+class DQN(nn.Module):
+    def __init__(self, state_size, action_size):
+        super(DQN, self).__init__()
+        self.fc1 = nn.Linear(state_size, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, action_size)
+        self.relu = nn.ReLU()
+        
+    def forward(self, x):
+        x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
+        return self.fc3(x)
 
 class TradingAgent:
     def __init__(self, state_size, action_size):
@@ -15,18 +28,12 @@ class TradingAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.001
-        self.model = self._build_model()
-        self.target_model = self._build_model()
-        
-    def _build_model(self):
-        """Build DQN model architecture"""
-        inputs = Input(shape=(self.state_size,))
-        x = Dense(64, activation='relu')(inputs)
-        x = Dense(64, activation='relu')(x)
-        outputs = Dense(self.action_size, activation='linear')(x)
-        model = tf.keras.Model(inputs=inputs, outputs=outputs)
-        model.compile(loss='mse', optimizer=Adam(learning_rate=self.learning_rate))
-        return model
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = DQN(state_size, action_size).to(self.device)
+        self.target_model = DQN(state_size, action_size).to(self.device)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        self.loss_fn = nn.MSELoss()
+        self.update_target_model()
         
     def remember(self, state, action, reward, next_state, done):
         """Store experience in replay memory"""
@@ -36,34 +43,37 @@ class TradingAgent:
         """Select action using epsilon-greedy policy"""
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
-        act_values = self.model.predict(state, verbose=0)
-        return np.argmax(act_values[0])
-        
+        state = torch.FloatTensor(state).to(self.device)
+        with torch.no_grad():
+            act_values = self.model(state)
+        return act_values.argmax().item()
+            
     def replay(self, batch_size=32):
         """Train on batch from memory"""
         if len(self.memory) < batch_size:
             return
             
         minibatch = random.sample(self.memory, batch_size)
-        states = np.array([i[0] for i in minibatch])
-        actions = np.array([i[1] for i in minibatch])
-        rewards = np.array([i[2] for i in minibatch])
-        next_states = np.array([i[3] for i in minibatch])
-        dones = np.array([i[4] for i in minibatch])
+        states = torch.FloatTensor(np.array([i[0][0] for i in minibatch])).to(self.device)
+        actions = torch.LongTensor(np.array([i[1] for i in minibatch])).to(self.device)
+        rewards = torch.FloatTensor(np.array([i[2] for i in minibatch])).to(self.device)
+        next_states = torch.FloatTensor(np.array([i[3][0] for i in minibatch])).to(self.device)
+        dones = torch.FloatTensor(np.array([i[4] for i in minibatch])).to(self.device)
         
-        # Predict Q-values for current and next states
-        current_q = self.model.predict(states, verbose=0)
-        next_q = self.target_model.predict(next_states, verbose=0)
+        # Get current Q values
+        current_q = self.model(states).gather(1, actions.unsqueeze(1))
         
-        # Update Q-values using Bellman equation
-        for i in range(batch_size):
-            if dones[i]:
-                current_q[i][actions[i]] = rewards[i]
-            else:
-                current_q[i][actions[i]] = rewards[i] + self.gamma * np.amax(next_q[i])
-                
-        # Train model
-        self.model.fit(states, current_q, epochs=1, verbose=0)
+        # Get next Q values from target model
+        next_q = self.target_model(next_states).max(1)[0].detach()
+        
+        # Compute target Q values
+        target_q = rewards + (1 - dones) * self.gamma * next_q
+        
+        # Compute loss and optimize
+        loss = self.loss_fn(current_q.squeeze(), target_q)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
         
         # Decay exploration rate
         if self.epsilon > self.epsilon_min:
@@ -71,11 +81,11 @@ class TradingAgent:
             
     def update_target_model(self):
         """Update target network weights"""
-        self.target_model.set_weights(self.model.get_weights())
+        self.target_model.load_state_dict(self.model.state_dict())
         
-    def save_model(self, path='rl_trading_agent.h5'):
+    def save_model(self, path='rl_trading_agent.pth'):
         """Save trained model"""
-        self.model.save(path)
+        torch.save(self.model.state_dict(), path)
         print(f"Model saved to {path}")
 
 class MarketEnvironment:

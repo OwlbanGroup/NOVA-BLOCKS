@@ -1,0 +1,27 @@
+name: Docker Image Security Scan
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'frontend/Dockerfile' ]
+  schedule:
+    - cron: '0 0 * * 1' # Weekly scans on Monday
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Docker image
+        run: |
+          cd frontend
+          docker build -t nova-blocks-frontend .
+          
+      - name: Install Docker Scan
+        run: docker scan --version || docker plugin install --grant-all-permissions scan
+      
+      - name: Scan for vulnerabilities
+        run: |
+          cd frontend
+          docker scan --severity high --dependency-tree --file Dockerfile nova-blocks-frontend
