@@ -18,10 +18,21 @@ class OptionsDataset(Dataset):
     def __getitem__(self, idx):
         return self.sequences[idx], self.targets[idx]
 
+class Attention(nn.Module):
+    def __init__(self, hidden_size):
+        super(Attention, self).__init__()
+        self.attention = nn.Linear(hidden_size, 1)
+
+    def forward(self, lstm_output):
+        weights = torch.softmax(self.attention(lstm_output), dim=1)
+        weighted_output = torch.sum(weights * lstm_output, dim=1)
+        return weighted_output
+
 class OptionsModel(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, output_size):
         super(OptionsModel, self).__init__()
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True, dropout=0.2)
+        self.attention = Attention(hidden_size)
         self.fc1 = nn.Linear(hidden_size, 32)
         self.fc2 = nn.Linear(32, output_size)
         self.relu = nn.ReLU()
@@ -29,8 +40,8 @@ class OptionsModel(nn.Module):
         
     def forward(self, x):
         out, _ = self.lstm(x)
-        out = out[:, -1, :]  # Get last timestep output
-        out = self.dropout(out)
+        attn_out = self.attention(out)
+        out = self.dropout(attn_out)
         out = self.relu(self.fc1(out))
         out = self.fc2(out)
         return out
