@@ -45,10 +45,9 @@ class AITradingSystem:
             api_key=self.config.get('api_key', 'demo')
         )
         
-        # RL trading agent with dynamic state size
-        state_size = self.data['stocks'].shape[1]  # Number of features
+        # RL trading agent
         self.models['rl_agent'] = TradingAgent(
-            state_size=state_size,
+            state_size=15,  # Number of features
             action_size=3   # Hold/Buy/Sell
         )
         
@@ -86,7 +85,7 @@ class AITradingSystem:
                     agent.update_target_model()
                     print(f"Episode: {e+1}/{episodes}, Total Reward: {total_reward:.2f}")
                     
-                if len(agent.memory.buffer) > 32:
+                if len(agent.memory) > 32:
                     agent.replay(32)
     
     def run_live_trading(self, paper_trading=True):
