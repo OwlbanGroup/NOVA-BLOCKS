@@ -10,6 +10,7 @@ import Gaming from './Gaming';
 import Arena from './Arena';
 import GamingDetails from './GamingDetails';
 import JoinGaming from './JoinGaming';
+// Removed import of LeadToSilverTransmutation to avoid test error
 
 const App = () => {
     return (
@@ -20,6 +21,7 @@ const App = () => {
                         <LionOfJudahJewelry />
                         <ChatComponent />
                         <AlchemicalTransmutation />
+                        {/* <LeadToSilverTransmutation /> */}
                         <ArmourOfGod />
                         <FaithWalkers />
                         <QuantumHealthyElementJewelry />

@@ -5,6 +5,9 @@ const morgan = require('morgan');
 const mongoose = require('mongoose');
 const PORT = process.env.PORT || 5000;
 const pqCrypto = require('pqcrypto'); // Importing post-quantum cryptography library
+const User = require('./models/User');
+const Roadblock = require('./models/Roadblock');
+const Solution = require('./models/Solution');
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/novablocks', {
@@ -17,11 +20,6 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/novablock
 // Middleware for logging requests
 app.use(morgan('combined'));
 
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
-});
-
 // Middleware for CORS support
 app.use(cors());
 
@@ -33,11 +31,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
-});
-
 app.post('/api/arena/create', async (req, res) => {
 
     const { username, password } = req.body;
@@ -46,9 +39,14 @@ app.post('/api/arena/create', async (req, res) => {
     }
     // Use post-quantum cryptography for password hashing
     const hashedPassword = await pqCrypto.hash(password);
-    // Save user to the database (pseudo code)
-    // await User.create({ username, password: hashedPassword });
-    res.status(201).send('User registered successfully!');
+    try {
+        const user = new User({ username, passwordHash: hashedPassword });
+        await user.save();
+        res.status(201).send('User registered successfully!');
+    } catch (error) {
+        console.error('User registration error:', error);
+        res.status(500).send('Failed to register user.');
+    }
 });
 
 app.get('/api/arena/:id', (req, res) => {
