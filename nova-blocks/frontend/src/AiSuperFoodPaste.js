@@ -1,81 +1,46 @@
-import React, { useState } from 'react';
-import LoadingIndicator from './LoadingIndicator'; // Import LoadingIndicator
+import React, { useState, useEffect } from 'react';
 
-const AiSuperFoodPaste = () => {
-    const [ingredients, setIngredients] = useState('');
-    const [result, setResult] = useState('');
-    const [loading, setLoading] = useState(false); // Add loading state
+function AiSuperFoodPaste() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-
-    const handleInputChange = (event) => {
-        setIngredients(event.target.value); // Update ingredients input
-
-    };
-
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        setLoading(true);
-        setResult('');
-        try {
-            const response = await fetch('/api/create-food-paste', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ingredients }),
-            });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to create food paste');
-            }
-
-            // Display success message and analysis
-            setResult(
-                <div className="result-container">
-                    <h3>Food Paste Created!</h3>
-                    <p>{data.message}</p>
-                    <div className="analysis-section">
-                        <h4>Nutritional Analysis:</h4>
-                        <pre>{JSON.stringify(data.analysis, null, 2)}</pre>
-                    </div>
-                </div>
-            );
-        } catch (error) {
-            console.error('Error creating food paste:', error);
-            setResult(
-                <div className="error-message">
-                    <h3>Error</h3>
-                    <p>{error.message}</p>
-                    <p>Please check your ingredients and try again.</p>
-                </div>
-            );
-        } finally {
-            setLoading(false);
+  useEffect(() => {
+    fetch('/api/superfoodpaste')
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
-    };
+        return response.json();
+      })
+      .then((data) => {
+        setData(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        setError(error.message);
+        setLoading(false);
+      });
+  }, []);
 
-    return (
-        <div>
-            <h1>Create AI Super Food Paste</h1>
-            <form onSubmit={handleSubmit}>
-            <textarea
-                aria-label="Ingredients input" // Add ARIA label for accessibility
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-                    value={ingredients}
-                    onChange={handleInputChange}
-                    placeholder="Enter ingredients here..."
-                />
-            <button type="submit" disabled={loading}>Create Food Paste</button> {/* Disable button while loading */}
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
-            </form>
-            {loading && <LoadingIndicator loading={loading} />}
-            {result}
-
-
-        </div>
-    );
-};
+  return (
+    <div>
+      <h1>AI Super Food Paste Recommendations</h1>
+      <ul>
+        {data.recommendations.map((item) => (
+          <li key={item.id}>{item.name}: {item.description}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default AiSuperFoodPaste;
