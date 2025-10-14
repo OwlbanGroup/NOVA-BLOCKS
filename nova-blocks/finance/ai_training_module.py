@@ -1,29 +1,71 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import torch.nn.functional as F
-from torch.cuda.amp import autocast, GradScaler
-import tensorrt as trt
-import pycuda.driver as cuda
-import pycuda.autoinit
+"""
+AI Training Module for NOVA BLOCKS Options Trading.
+
+This module provides PyTorch-based neural network models and training infrastructure
+for options trading prediction and analysis, optimized for NVIDIA Blackwell GPUs.
+"""
+
+try:
+    import torch  # type: ignore
+    import torch.nn as nn  # type: ignore
+    import torch.optim as optim  # type: ignore
+    from torch.utils.data import Dataset, DataLoader  # type: ignore
+    from torch.cuda.amp import autocast, GradScaler  # type: ignore
+    TORCH_AVAILABLE = True
+except ImportError:
+    torch = None
+    nn = None
+    optim = None
+    Dataset = None
+    DataLoader = None
+    autocast = None
+    GradScaler = None
+    TORCH_AVAILABLE = False
+
+try:
+    from sklearn.model_selection import train_test_split  # type: ignore
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    train_test_split = None
+    SKLEARN_AVAILABLE = False
+
+try:
+    import pandas as pd  # type: ignore
+    PANDAS_AVAILABLE = True
+except ImportError:
+    pd = None
+    PANDAS_AVAILABLE = False
+
+try:
+    import numpy as np  # type: ignore
+    NUMPY_AVAILABLE = True
+except ImportError:
+    np = None
+    NUMPY_AVAILABLE = False
+
+try:
+    import matplotlib.pyplot as plt  # type: ignore
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    plt = None
+    MATPLOTLIB_AVAILABLE = False
 
 class OptionsDataset(Dataset):
+    """Dataset for options trading sequences and targets."""
+
     def __init__(self, sequences, targets):
         self.sequences = torch.FloatTensor(sequences)
         self.targets = torch.FloatTensor(targets)
-        
+
     def __len__(self):
         return len(self.sequences)
-    
+
     def __getitem__(self, idx):
         return self.sequences[idx], self.targets[idx]
 
 class Attention(nn.Module):
+    """Attention mechanism for LSTM outputs."""
+
     def __init__(self, hidden_size):
         super(Attention, self).__init__()
         self.attention = nn.Linear(hidden_size, 1)
@@ -34,6 +76,8 @@ class Attention(nn.Module):
         return weighted_output
 
 class OptionsModel(nn.Module):
+    """PyTorch model for options trading prediction with Blackwell optimizations."""
+
     def __init__(self, input_size, hidden_size, num_layers, output_size):
         super(OptionsModel, self).__init__()
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True, dropout=0.2)
@@ -64,13 +108,15 @@ class OptionsModel(nn.Module):
         return out
 
 class OptionsAITrainer:
+    """Trainer class for options trading AI models with Blackwell GPU support."""
+
     def __init__(self, data_path):
         self.data_path = data_path
         self.model = self._build_model()
         self.history = None
         self.criterion = nn.MSELoss()
         self.optimizer = None
-        
+
     def _build_model(self):
         """Construct PyTorch neural network"""
         model = OptionsModel(
@@ -79,17 +125,17 @@ class OptionsAITrainer:
             num_layers=2,
             output_size=3   # Predicts [premium, optimal_strike, probability]
         )
-        self.optimizer = optim.Adam(model.parameters(), lr=0.001)
+        self.optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
         return model
             
     def load_and_preprocess(self):
         """Load and prepare training data"""
         df = pd.read_csv(self.data_path)
-        
+
         # Feature engineering
         df['iv_rank'] = df['implied_volatility'] / df['historical_volatility']
         df['moneyness'] = (df['strike'] - df['spot']) / df['spot']
-        
+
         # Create sequences for LSTM
         sequences = []
         targets = []
@@ -104,19 +150,19 @@ class OptionsAITrainer:
             ]].values
             sequences.append(seq)
             targets.append(target)
-            
+
         return np.array(sequences), np.array(targets)
     
     def train(self, epochs=100, batch_size=32):
         """Train the PyTorch model with Blackwell optimizations"""
-        X, y = self.load_and_preprocess()
-        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2)
+        x, y = self.load_and_preprocess()
+        x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.2, random_state=42)
 
-        train_dataset = OptionsDataset(X_train, y_train)
-        val_dataset = OptionsDataset(X_val, y_val)
+        train_dataset = OptionsDataset(x_train, y_train)
+        val_dataset = OptionsDataset(x_val, y_val)
 
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=batch_size)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=0)
 
         self.history = {'train_loss': [], 'val_loss': []}
 
@@ -158,8 +204,8 @@ class OptionsAITrainer:
                     outputs = self.model(sequences)
                     val_loss += self.criterion(outputs, targets).item()
 
-            avg_train_loss = train_loss/len(train_loader)
-            avg_val_loss = val_loss/len(val_loader)
+            avg_train_loss = train_loss / len(train_loader)
+            avg_val_loss = val_loss / len(val_loader)
             self.history['train_loss'].append(avg_train_loss)
             self.history['val_loss'].append(avg_val_loss)
 
