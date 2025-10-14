@@ -37,14 +37,14 @@ class BlackwellBenchmark:
         self.baseline_results = {}
 
         print("Blackwell Benchmark Suite Initialized")
-        print(f"   GPU Detected: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None'}")
-        print(f"   Blackwell GPU: {'Yes' if self.is_blackwell else 'No'}")
-        print(f"   CUDA Version: {torch.version.cuda if torch.cuda.is_available() else 'N/A'}")
-        print(f"   PyTorch Version: {torch.__version__}")
-        print(f"   NumPy Available: {NUMPY_AVAILABLE}")
-        print(f"   Torch Available: {TORCH_AVAILABLE}")
-        print(f"   NumPy RNG: {'Generator' if hasattr(np.random, 'default_rng') else 'Legacy'}")
-        print(f"   Module Name: {__name__}")
+        print("   GPU Detected: {}".format(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None'))
+        print("   Blackwell GPU: {}".format('Yes' if self.is_blackwell else 'No'))
+        print("   CUDA Version: {}".format(torch.version.cuda if torch.cuda.is_available() else 'N/A'))
+        print("   PyTorch Version: {}".format(torch.__version__))
+        print("   NumPy Available: {}".format(NUMPY_AVAILABLE))
+        print("   Torch Available: {}".format(TORCH_AVAILABLE))
+        print("   NumPy RNG: {}".format('Generator' if hasattr(np.random, 'default_rng') else 'Legacy'))
+        print("   Module Name: {}".format(__name__))
 
     def _detect_blackwell_gpu(self):
         """Detect if Blackwell GPU is available"""
@@ -114,7 +114,7 @@ class BlackwellBenchmark:
 
             d2h_bandwidth = (size * 100) / (end_time - start_time) / (1024**3)  # GB/s
 
-            bandwidth_results[f'{size//(1024*1024)}MB'] = {
+            bandwidth_results['{}MB'.format(size//(1024*1024))] = {
                 'h2d_gb_s': round(h2d_bandwidth, 2),
                 'd2h_gb_s': round(d2h_bandwidth, 2)
             }
@@ -154,7 +154,7 @@ class BlackwellBenchmark:
             ops = 2 * size**3 * 50  # 2 operations per multiplication
             tflops = ops / (end_time - start_time) / 1e12
 
-            tensor_core_results[f'{size}x{size}'] = {
+            tensor_core_results['{}x{}'.format(size, size)] = {
                 'tflops': round(tflops, 2),
                 'time_ms': round((end_time - start_time) * 1000, 2)
             }
@@ -234,7 +234,7 @@ class BlackwellBenchmark:
             'speedup': round(speedup, 2),
             'blackwell_optimized': self.is_blackwell
         }
-        print(f"   ✅ Mixed precision test complete (Speedup: {speedup:.2f}x)")
+        print("   ✅ Mixed precision test complete (Speedup: {:.2f}x)".format(speedup))
 
     def _benchmark_ai_models(self):
         """Benchmark NOVA BLOCKS AI models"""
@@ -289,8 +289,8 @@ class BlackwellBenchmark:
             print("AI models test complete")
 
         except ImportError as e:
-            self.results['ai_models'] = {'error': f'Import failed: {str(e)}'}
-            print(f"AI models test skipped (import error)")
+            self.results['ai_models'] = {'error': 'Import failed: {}'.format(str(e))}
+            print("AI models test skipped (import error)")
 
     def _benchmark_quantum_simulations(self):
         """Benchmark quantum simulation performance"""
@@ -321,8 +321,8 @@ class BlackwellBenchmark:
             print("Quantum simulations test complete")
 
         except ImportError as e:
-            self.results['quantum_simulations'] = {'error': f'Import failed: {str(e)}'}
-            print(f"   ⚠️  Quantum simulations test skipped (import error)")
+            self.results['quantum_simulations'] = {'error': 'Import failed: {}'.format(str(e))}
+            print("   ⚠️  Quantum simulations test skipped (import error)")
 
     def _generate_comparison_report(self):
         """Generate comparison with baseline performance"""
@@ -353,7 +353,7 @@ class BlackwellBenchmark:
     def _save_results(self):
         """Save benchmark results to file"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f'nova_blocks/scripts/blackwell_benchmark_{timestamp}.json'
+        filename = 'nova_blocks/scripts/blackwell_benchmark_{}.json'.format(timestamp)
 
         os.makedirs('nova_blocks/scripts', exist_ok=True)
 
@@ -369,7 +369,7 @@ class BlackwellBenchmark:
                 'results': self.results
             }, f, indent=2)
 
-        print(f"Results saved to {filename}")
+        print("Results saved to {}".format(filename))
 
         # Generate summary report
         self._generate_summary_report()
@@ -386,40 +386,47 @@ class BlackwellBenchmark:
             print("Non-Blackwell GPU - Limited optimizations available")
 
         if 'memory_bandwidth' in self.results:
-            print(f"\nMemory Bandwidth:")
+            print("\nMemory Bandwidth:")
             for size, data in self.results['memory_bandwidth'].items():
                 if 'error' not in data:
-                    print(f"   {size}: H2D {data['h2d_gb_s']} GB/s, D2H {data['d2h_gb_s']} GB/s")
+                    print("   {}: H2D {} GB/s, D2H {} GB/s".format(
+                        size, data['h2d_gb_s'], data['d2h_gb_s']))
 
         if 'tensor_cores' in self.results:
-            print(f"\nTensor Core Performance:")
+            print("\nTensor Core Performance:")
             for size, data in self.results['tensor_cores'].items():
                 if 'error' not in data:
-                    print(f"   {size}: {data['tflops']} TFLOPS ({data['time_ms']}ms)")
+                    print("   {}: {} TFLOPS ({}ms)".format(
+                        size, data['tflops'], data['time_ms']))
 
         if 'mixed_precision' in self.results:
             mp = self.results['mixed_precision']
-            print(f"\nMixed Precision Training:")
-            print(f"   FP32: {mp['fp32_time_s']}s, FP16: {mp['fp16_time_s']}s")
-            print(f"   Speedup: {mp['speedup']}x")
+            print("\nMixed Precision Training:")
+            print("   FP32: {}s, FP16: {}s".format(mp['fp32_time_s'], mp['fp16_time_s']))
+            print("   Speedup: {}x".format(mp['speedup']))
 
         if 'ai_models' in self.results:
             ai = self.results['ai_models']
-            print(f"\nAI Model Performance:")
-            print(f"   Options Model: {ai.get('options_model_inference_ms', 'N/A')}ms per inference")
-            print(f"   RL Agent: {ai.get('rl_agent_inference_ms', 'N/A')}ms per action")
-            print(f"   Throughput: {ai.get('throughput_samples_s', 'N/A')} samples/s")
+            print("\nAI Model Performance:")
+            print("   Options Model: {}ms per inference".format(
+                ai.get('options_model_inference_ms', 'N/A')))
+            print("   RL Agent: {}ms per action".format(
+                ai.get('rl_agent_inference_ms', 'N/A')))
+            print("   Throughput: {} samples/s".format(
+                ai.get('throughput_samples_s', 'N/A')))
 
         if 'quantum_simulations' in self.results:
             qs = self.results['quantum_simulations']
-            print(f"\nQuantum Simulations:")
-            print(f"   Simulation time: {qs.get('simulation_time_ms', 'N/A')}ms")
-            print(f"   Blackwell accelerated: {qs.get('blackwell_accelerated', False)}")
+            print("\nQuantum Simulations:")
+            print("   Simulation time: {}ms".format(
+                qs.get('simulation_time_ms', 'N/A')))
+            print("   Blackwell accelerated: {}".format(
+                qs.get('blackwell_accelerated', False)))
 
         if 'comparison' in self.results and self.results['comparison']:
-            print(f"\nPerformance Improvements:")
+            print("\nPerformance Improvements:")
             for metric, improvement in self.results['comparison'].items():
-                print(f"   {metric}: {improvement}x improvement")
+                print("   {}: {}x improvement".format(metric, improvement))
 
         print("\n" + "="*60)
 
@@ -430,7 +437,7 @@ def main():
         results = benchmark.run_comprehensive_benchmark()
         return results
     except Exception as e:
-        print(f"❌ Benchmark failed: {str(e)}")
+        print("❌ Benchmark failed: {}".format(str(e)))
         return None
 
 if __name__ == "__main__":
