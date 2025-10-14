@@ -4,6 +4,9 @@ from tensorflow.keras.models import Model
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import RobustScaler
+import tensorrt as trt
+import pycuda.driver as cuda
+import pycuda.autoinit
 
 class StockMarketTrainer:
     def __init__(self):

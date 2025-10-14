@@ -1,12 +1,14 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "description": "Backend for NOVA BLOCKS application with NVIDIA Blackwell GPU acceleration",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "gpu-setup": "node scripts/setup-blackwell.js"
   },
-  "keywords": [],
+  "keywords": ["nova-blocks", "gpu", "blackwell", "ai", "tensorflow"],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -14,6 +16,11 @@
     "cors": "^2.8.5",
     "morgan": "^1.10.0",
     "mongoose": "^5.10.9",
-    "pqcrypto": "^1.0.0"
+    "pqcrypto": "^1.0.0",
+    "@tensorflow/tfjs": "^4.15.0",
+    "@tensorflow/tfjs-node-gpu": "^4.15.0",
+    "gpu.js": "^2.16.0",
+    "node-cuda": "^2.1.0",
+    "nvidia-smi": "^1.0.0"
   }
 }

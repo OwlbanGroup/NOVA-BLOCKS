@@ -4,6 +4,10 @@ import torch.nn as nn
 import torch.optim as optim
 from collections import deque
 import random
+from torch.cuda.amp import autocast, GradScaler
+import tensorrt as trt
+import pycuda.driver as cuda
+import pycuda.autoinit
 
 class PrioritizedReplayBuffer:
     def __init__(self, capacity, alpha=0.6):
@@ -94,6 +98,10 @@ class TradingAgent:
         self.update_target_model()
         self.state_buffer = deque(maxlen=seq_len)
 
+        # Blackwell optimizations
+        self.scaler = GradScaler()
+        self.use_blackwell = torch.cuda.is_available() and torch.cuda.get_device_name(0).startswith('NVIDIA Blackwell')
+
     def remember(self, state, action, reward, next_state, done):
         self.memory.push(state, action, reward, next_state, done)
 
@@ -120,14 +128,23 @@ class TradingAgent:
         dones = torch.FloatTensor(dones).to(self.device)
         weights = torch.FloatTensor(weights).to(self.device)
 
-        current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
-        next_q = self.target_model(next_states).max(1)[0].detach()
-        target_q = rewards + (1 - dones) * self.gamma * next_q
-
-        loss = (weights * self.loss_fn(current_q, target_q)).mean()
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+        if self.use_blackwell:
+            with autocast():
+                current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+                next_q = self.target_model(next_states).max(1)[0].detach()
+                target_q = rewards + (1 - dones) * self.gamma * next_q
+                loss = (weights * self.loss_fn(current_q, target_q)).mean()
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+        else:
+            current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+            next_q = self.target_model(next_states).max(1)[0].detach()
+            target_q = rewards + (1 - dones) * self.gamma * next_q
+            loss = (weights * self.loss_fn(current_q, target_q)).mean()
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
 
         prios = (target_q - current_q).abs().detach().cpu().numpy()
         self.memory.update_priorities(indices, prios)

@@ -6,6 +6,11 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
+from torch.cuda.amp import autocast, GradScaler
+import tensorrt as trt
+import pycuda.driver as cuda
+import pycuda.autoinit
 
 class OptionsDataset(Dataset):
     def __init__(self, sequences, targets):
@@ -37,13 +42,25 @@ class OptionsModel(nn.Module):
         self.fc2 = nn.Linear(32, output_size)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.2)
-        
+
+        # Blackwell optimizations
+        self.scaler = GradScaler()
+        self.use_blackwell = torch.cuda.is_available() and torch.cuda.get_device_name(0).startswith('NVIDIA Blackwell')
+
     def forward(self, x):
-        out, _ = self.lstm(x)
-        attn_out = self.attention(out)
-        out = self.dropout(attn_out)
-        out = self.relu(self.fc1(out))
-        out = self.fc2(out)
+        if self.use_blackwell:
+            with autocast():
+                out, _ = self.lstm(x)
+                attn_out = self.attention(out)
+                out = self.dropout(attn_out)
+                out = self.relu(self.fc1(out))
+                out = self.fc2(out)
+        else:
+            out, _ = self.lstm(x)
+            attn_out = self.attention(out)
+            out = self.dropout(attn_out)
+            out = self.relu(self.fc1(out))
+            out = self.fc2(out)
         return out
 
 class OptionsAITrainer:
@@ -91,43 +108,63 @@ class OptionsAITrainer:
         return np.array(sequences), np.array(targets)
     
     def train(self, epochs=100, batch_size=32):
-        """Train the PyTorch model"""
+        """Train the PyTorch model with Blackwell optimizations"""
         X, y = self.load_and_preprocess()
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2)
-        
+
         train_dataset = OptionsDataset(X_train, y_train)
         val_dataset = OptionsDataset(X_val, y_val)
-        
+
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=batch_size)
-        
+
         self.history = {'train_loss': [], 'val_loss': []}
-        
+
+        # Move model to GPU if Blackwell available
+        if self.model.use_blackwell:
+            self.model = self.model.cuda()
+            print("Using NVIDIA Blackwell GPU for training")
+
         for epoch in range(epochs):
             self.model.train()
             train_loss = 0
             for sequences, targets in train_loader:
+                if self.model.use_blackwell:
+                    sequences, targets = sequences.cuda(), targets.cuda()
+
                 self.optimizer.zero_grad()
-                outputs = self.model(sequences)
-                loss = self.criterion(outputs, targets)
-                loss.backward()
-                self.optimizer.step()
+
+                if self.model.use_blackwell:
+                    with autocast():
+                        outputs = self.model(sequences)
+                        loss = self.criterion(outputs, targets)
+                    self.model.scaler.scale(loss).backward()
+                    self.model.scaler.step(self.optimizer)
+                    self.model.scaler.update()
+                else:
+                    outputs = self.model(sequences)
+                    loss = self.criterion(outputs, targets)
+                    loss.backward()
+                    self.optimizer.step()
+
                 train_loss += loss.item()
-                
+
             self.model.eval()
             val_loss = 0
             with torch.no_grad():
                 for sequences, targets in val_loader:
+                    if self.model.use_blackwell:
+                        sequences, targets = sequences.cuda(), targets.cuda()
                     outputs = self.model(sequences)
                     val_loss += self.criterion(outputs, targets).item()
-                    
+
             avg_train_loss = train_loss/len(train_loader)
             avg_val_loss = val_loss/len(val_loader)
             self.history['train_loss'].append(avg_train_loss)
             self.history['val_loss'].append(avg_val_loss)
-            
+
             print(f'Epoch {epoch+1}/{epochs}, Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}')
-            
+
             # Early stopping
             if epoch > 5 and avg_val_loss > min(self.history['val_loss'][-5:]):
                 print("Early stopping")
