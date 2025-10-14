@@ -114,17 +114,17 @@ class BlackwellBenchmark:
 
             d2h_bandwidth = (size * 100) / (end_time - start_time) / (1024**3)  # GB/s
 
-            bandwidth_results['{}MB'.format(size//(1024*1024))] = {
+            bandwidth_results[f'{size//(1024*1024)}MB'] = {
                 'h2d_gb_s': round(h2d_bandwidth, 2),
                 'd2h_gb_s': round(d2h_bandwidth, 2)
             }
 
         self.results['memory_bandwidth'] = bandwidth_results
-        print("   ✅ Memory bandwidth test complete")
+        print("Memory bandwidth test complete")
 
     def _benchmark_tensor_cores(self):
         """Test Blackwell tensor core performance"""
-        print("2. Testing Tensor Core Performance...")
+        print("Testing Tensor Core Performance...")
 
         if not self.is_blackwell:
             self.results['tensor_cores'] = {'error': 'Blackwell GPU required for tensor core tests'}
@@ -154,17 +154,17 @@ class BlackwellBenchmark:
             ops = 2 * size**3 * 50  # 2 operations per multiplication
             tflops = ops / (end_time - start_time) / 1e12
 
-            tensor_core_results['{}x{}'.format(size, size)] = {
+            tensor_core_results[f'{size}x{size}'] = {
                 'tflops': round(tflops, 2),
                 'time_ms': round((end_time - start_time) * 1000, 2)
             }
 
         self.results['tensor_cores'] = tensor_core_results
-        print("   ✅ Tensor core test complete")
+        print("Tensor core test complete")
 
     def _benchmark_mixed_precision(self):
         """Test mixed precision training performance"""
-        print("3. Testing Mixed Precision Training...")
+        print("Testing Mixed Precision Training...")
 
         # Create a simple model for testing
         model = nn.Sequential(
@@ -201,11 +201,12 @@ class BlackwellBenchmark:
             loss = criterion(outputs, batch_labels)
             loss.backward()
             optimizer_fp32.step()
-        torch.cuda.synchronize()
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
         fp32_time = time.time() - start_time
 
         # FP16 with autocast (Blackwell optimized)
-        if self.is_blackwell:
+        if self.is_blackwell and torch.cuda.is_available():
             scaler = GradScaler()
 
             start_time = time.time()
@@ -234,11 +235,11 @@ class BlackwellBenchmark:
             'speedup': round(speedup, 2),
             'blackwell_optimized': self.is_blackwell
         }
-        print("   ✅ Mixed precision test complete (Speedup: {:.2f}x)".format(speedup))
+        print("Mixed precision test complete (Speedup: {:.2f}x)".format(speedup))
 
     def _benchmark_ai_models(self):
         """Benchmark NOVA BLOCKS AI models"""
-        print("4. Testing NOVA BLOCKS AI Models...")
+        print("Testing NOVA BLOCKS AI Models...")
 
         # Import and test finance models
         try:
@@ -294,7 +295,7 @@ class BlackwellBenchmark:
 
     def _benchmark_quantum_simulations(self):
         """Benchmark quantum simulation performance"""
-        print("5. Testing Quantum Simulations...")
+        print("Testing Quantum Simulations...")
 
         try:
             from nova_blocks.ai_embedded_gold_interface import BlackwellQuantumSimulator
@@ -322,7 +323,7 @@ class BlackwellBenchmark:
 
         except ImportError as e:
             self.results['quantum_simulations'] = {'error': 'Import failed: {}'.format(str(e))}
-            print("   ⚠️  Quantum simulations test skipped (import error)")
+            print("Quantum simulations test skipped (import error)")
 
     def _generate_comparison_report(self):
         """Generate comparison with baseline performance"""
@@ -353,7 +354,7 @@ class BlackwellBenchmark:
     def _save_results(self):
         """Save benchmark results to file"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = 'nova_blocks/scripts/blackwell_benchmark_{}.json'.format(timestamp)
+        filename = f'nova_blocks/scripts/blackwell_benchmark_{timestamp}.json'
 
         os.makedirs('nova_blocks/scripts', exist_ok=True)
 
@@ -387,17 +388,23 @@ class BlackwellBenchmark:
 
         if 'memory_bandwidth' in self.results:
             print("\nMemory Bandwidth:")
-            for size, data in self.results['memory_bandwidth'].items():
-                if 'error' not in data:
-                    print("   {}: H2D {} GB/s, D2H {} GB/s".format(
-                        size, data['h2d_gb_s'], data['d2h_gb_s']))
+            if isinstance(self.results['memory_bandwidth'], dict) and 'error' not in self.results['memory_bandwidth']:
+                for size, data in self.results['memory_bandwidth'].items():
+                    if 'error' not in data:
+                        print("   {}: H2D {} GB/s, D2H {} GB/s".format(
+                            size, data['h2d_gb_s'], data['d2h_gb_s']))
+            elif 'error' in self.results['memory_bandwidth']:
+                print("   {}".format(self.results['memory_bandwidth']['error']))
 
         if 'tensor_cores' in self.results:
             print("\nTensor Core Performance:")
-            for size, data in self.results['tensor_cores'].items():
-                if 'error' not in data:
-                    print("   {}: {} TFLOPS ({}ms)".format(
-                        size, data['tflops'], data['time_ms']))
+            if isinstance(self.results['tensor_cores'], dict) and 'error' not in self.results['tensor_cores']:
+                for size, data in self.results['tensor_cores'].items():
+                    if 'error' not in data:
+                        print("   {}: {} TFLOPS ({}ms)".format(
+                            size, data['tflops'], data['time_ms']))
+            elif 'error' in self.results['tensor_cores']:
+                print("   {}".format(self.results['tensor_cores']['error']))
 
         if 'mixed_precision' in self.results:
             mp = self.results['mixed_precision']
@@ -437,7 +444,7 @@ def main():
         results = benchmark.run_comprehensive_benchmark()
         return results
     except Exception as e:
-        print("❌ Benchmark failed: {}".format(str(e)))
+        print("Benchmark failed: {}".format(str(e)))
         return None
 
 if __name__ == "__main__":

@@ -1,0 +1,30 @@
+{
+  "timestamp": "20251013_201504",
+  "gpu_info": {
+    "name": "CPU",
+    "is_blackwell": false,
+    "cuda_version": null,
+    "pytorch_version": "2.1.0+cpu"
+  },
+  "results": {
+    "memory_bandwidth": {
+      "error": "No CUDA GPU available"
+    },
+    "tensor_cores": {
+      "error": "Blackwell GPU required for tensor core tests"
+    },
+    "mixed_precision": {
+      "fp32_time_s": 6.781,
+      "fp16_time_s": 6.781,
+      "speedup": 1.0,
+      "blackwell_optimized": false
+    },
+    "ai_models": {
+      "error": "Import failed: No module named 'nova_blocks'"
+    },
+    "quantum_simulations": {
+      "error": "Import failed: No module named 'nova_blocks'"
+    },
+    "comparison": {}
+  }
+}
