@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./nova_blocks/backend
+      dockerfile: Dockerfile
+    container_name: nova-blocks-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/novablocks}
+      - JWT_SECRET=${JWT_SECRET}
+      - GPU_ENABLED=${GPU_ENABLED:-false}
+    volumes:
+      - backend-logs:/app/logs
+    networks:
+      - nova-blocks-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  frontend:
+    build:
+      context: ./nova_blocks/frontend
+      dockerfile: Dockerfile
+    container_name: nova-blocks-frontend
+    ports:
+      - "8080:80"
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:3000}
+      - REACT_APP_WS_URL=${REACT_APP_WS_URL:-ws://localhost:3000}
+    depends_on:
+      - backend
+    networks:
+      - nova-blocks-network
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7.0
+    container_name: nova-blocks-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - nova-blocks-network
+    restart: unless-stopped
+
+networks:
+  nova-blocks-network:
+    driver: bridge
+
+volumes:
+  backend-logs:
+  mongodb-data:

@@ -1,0 +1,40 @@
+{
+  "name": "nova-blocks",
+  "version": "1.0.0",
+  "description": "NOVA BLOCKS - Full-stack application with NVIDIA Blackwell GPU acceleration",
+  "private": true,
+  "workspaces": [
+    "nova_blocks/backend",
+    "nova_blocks/frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --workspace nova_blocks/backend && npm install --workspace nova_blocks/frontend",
+    "build": "npm run build:frontend",
+    "build:backend": "npm run build --workspace nova_blocks/backend",
+    "build:frontend": "npm run build --workspace nova_blocks/frontend",
+    "start": "npm run start:backend",
+    "start:backend": "npm run start --workspace nova_blocks/backend",
+    "start:frontend": "npm run start --workspace nova_blocks/frontend",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "npm run test --workspace nova_blocks/backend",
+    "test:frontend": "npm run test --workspace nova_blocks/frontend",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "deploy": "docker-compose up -d --build"
+  },
+  "devDependencies": {
+    "docker-compose": "^1.29.2"
+  },
+  "keywords": [
+    "nova-blocks",
+    "gpu",
+    "blackwell",
+    "ai",
+    "react",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC"
+}

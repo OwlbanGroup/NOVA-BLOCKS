@@ -5,36 +5,28 @@ This module implements a reinforcement learning trading agent using Dueling DQN 
 for sequential decision making in financial markets, optimized for NVIDIA Blackwell GPUs.
 """
 
-from collections import deque
 import random
+from collections import deque
 
 try:
     import numpy as np  # type: ignore
     NUMPY_AVAILABLE = True
 except ImportError:
-    np = None
     NUMPY_AVAILABLE = False
-
-try:
-    import torch  # type: ignore
-    import torch.nn as nn  # type: ignore
-    import torch.optim as optim  # type: ignore
-    from torch.cuda.amp import autocast, GradScaler  # type: ignore
-    TORCH_AVAILABLE = True
-except ImportError:
-    torch = None
-    nn = None
-    optim = None
-    autocast = None
-    GradScaler = None
-    TORCH_AVAILABLE = False
 
 try:
     import pandas as pd  # type: ignore
     PANDAS_AVAILABLE = True
 except ImportError:
-    pd = None
     PANDAS_AVAILABLE = False
+
+try:
+    import torch  # type: ignore
+    from torch import nn, optim  # type: ignore
+    from torch.cuda.amp import autocast, GradScaler  # type: ignore
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
 
 class PrioritizedReplayBuffer:
     """Prioritized experience replay buffer for RL training."""
@@ -59,7 +51,7 @@ class PrioritizedReplayBuffer:
         self.priorities[self.pos] = max_prio
         self.pos = (self.pos + 1) % self.capacity
 
-    def sample(self, batch_size, beta=0.4):
+    def sample(self, batch_size_param, beta=0.4):
         """Sample batch with priorities."""
         if len(self.buffer) == self.capacity:
             prios = self.priorities
@@ -68,8 +60,9 @@ class PrioritizedReplayBuffer:
         probs = prios ** self.alpha
         probs /= probs.sum()
 
-        rng = np.random.default_rng()
-        indices = rng.choice(len(self.buffer), batch_size, p=probs)
+        rng = np.random.default_rng(seed=42)
+        indices = rng.choice(len(self.buffer), batch_size_param, p=probs)
+        batch_size = batch_size_param
         samples = [self.buffer[idx] for idx in indices]
 
         total = len(self.buffer)
@@ -96,7 +89,7 @@ class DuelingDqnLstm(nn.Module):
 
     def __init__(self, state_size, action_size, hidden_size=64, lstm_layers=1):
         """Initialize the Dueling DQN LSTM network."""
-        super(DuelingDqnLstm, self).__init__()
+        super().__init__()
         self.lstm = nn.LSTM(state_size, hidden_size, lstm_layers, batch_first=True)
         self.fc_adv = nn.Sequential(
             nn.Linear(hidden_size, 64),
@@ -136,26 +129,33 @@ class TradingAgent:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = DuelingDqnLstm(state_size, action_size).to(self.device)
         self.target_model = DuelingDqnLstm(state_size, action_size).to(self.device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=1e-4)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate,
+                                   weight_decay=1e-4)
         self.loss_fn = nn.MSELoss()
         self.update_target_model()
         self.state_buffer = deque(maxlen=seq_len)
 
         # Blackwell optimizations
-        self.scaler = GradScaler()
-        self.use_blackwell = torch.cuda.is_available() and torch.cuda.get_device_name(0).startswith('NVIDIA Blackwell')
+        if TORCH_AVAILABLE:
+            self.scaler = GradScaler()
+            self.use_blackwell = torch.cuda.is_available() and \
+                                torch.cuda.get_device_name(0).startswith(
+                                    'NVIDIA Blackwell')
+        else:
+            self.scaler = None
+            self.use_blackwell = False
 
     def remember(self, exp_state, exp_action, exp_reward, exp_next_state, exp_done):
         """Store experience in memory."""
         self.memory.push(exp_state, exp_action, exp_reward, exp_next_state, exp_done)
 
-    def act(self, current_state):
+    def act(self, curr_state):
         """Choose action based on current state."""
-        self.state_buffer.append(current_state)
+        self.state_buffer.append(curr_state)
         if len(self.state_buffer) < self.seq_len:
             return random.randrange(self.action_size)
         state_seq = self._get_current_state()
-        if np.random.rand() <= self.epsilon:
+        if random.random() <= self.epsilon:
             return random.randrange(self.action_size)
         with torch.no_grad():
             act_values = self.model(state_seq)
@@ -171,25 +171,29 @@ class TradingAgent:
         if len(self.memory.buffer) < batch_size:
             return
         states, actions, rewards, next_states, dones, indices, weights = self.memory.sample(batch_size, beta)
-        states = torch.FloatTensor(states).view(batch_size, self.seq_len,
+        states = torch.FloatTensor(states).view(batch_size,
+                                                self.seq_len,
                                                 self.state_size).to(self.device)
-        next_states = torch.FloatTensor(next_states).view(batch_size, self.seq_len,
+        next_states = torch.FloatTensor(next_states).view(batch_size,
+                                                          self.seq_len,
                                                           self.state_size).to(self.device)
         actions = torch.LongTensor(actions).to(self.device)
         rewards = torch.FloatTensor(rewards).to(self.device)
         dones = torch.FloatTensor(dones).to(self.device)
         weights = torch.FloatTensor(weights).to(self.device)
 
-        if self.use_blackwell:
+        if self.use_blackwell and self.scaler is not None:
             with autocast():
-                target_q, current_q, loss = self._train_step(states, actions, rewards, next_states, dones, weights)
+                target_q, curr_q, loss = self._train_step(states, actions, rewards,
+                                                         next_states, dones, weights)
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
         else:
-            target_q, current_q, loss = self._train_step(states, actions, rewards, next_states, dones, weights)
+            target_q, curr_q, loss = self._train_step(states, actions, rewards,
+                                                     next_states, dones, weights)
 
-        prios = (target_q - current_q).abs().detach().cpu().numpy()
+        prios = (target_q - curr_q).abs().detach().cpu().numpy()
         self.memory.update_priorities(indices, prios)
 
         if self.epsilon > self.epsilon_min:
@@ -197,15 +201,15 @@ class TradingAgent:
 
     def _train_step(self, states, actions, rewards, next_states, dones, weights):
         """Perform a single training step."""
-        current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+        curr_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         next_q = self.target_model(next_states).max(1)[0].detach()
         target_q = rewards + (1 - dones) * self.gamma * next_q
-        loss = (weights * self.loss_fn(current_q, target_q)).mean()
+        loss = (weights * self.loss_fn(curr_q, target_q)).mean()
         if not self.use_blackwell:
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-        return target_q, current_q, loss
+        return target_q, curr_q, loss
 
     def update_target_model(self):
         """Update target model with current model weights."""
@@ -219,9 +223,9 @@ class TradingAgent:
 class MarketEnvironment:
     """Market environment for trading simulation."""
 
-    def __init__(self, data, initial_balance=10000):
+    def __init__(self, data_frame, initial_balance=10000):
         """Initialize the market environment."""
-        self.data = data
+        self.data = data_frame
         self.initial_balance = initial_balance
         self.balance = initial_balance
         self.portfolio = 0
@@ -239,19 +243,20 @@ class MarketEnvironment:
     def _get_state(self):
         """Get current state representation."""
         state = self.data.iloc[self.current_step].values
-        state = np.append(state, [self.balance / self.initial_balance, self.portfolio / 100])
+        state = np.append(state, [self.balance / self.initial_balance,
+                                  self.portfolio / 100])
         return np.reshape(state, [1, len(state)])
 
     def step(self, action):
         """Execute action and return next state, reward, done."""
-        current_price = self.data.iloc[self.current_step]['close']
+        curr_price = self.data.iloc[self.current_step]['close']
         reward = 0
 
         if action == 1 and self.balance > 0:
-            self.portfolio += self.balance / current_price
+            self.portfolio += self.balance / curr_price
             self.balance = 0
         elif action == 2 and self.portfolio > 0:
-            self.balance = self.portfolio * current_price
+            self.balance = self.portfolio * curr_price
             self.portfolio = 0
             reward = (self.balance - self.initial_balance) / self.initial_balance
 
@@ -263,31 +268,36 @@ class MarketEnvironment:
         return next_state, reward, self.done
 
 if __name__ == "__main__":
-    import pandas as pd
+    if not PANDAS_AVAILABLE:
+        print("Pandas not available. Cannot run training example.")
+        import sys
+        sys.exit(1)
 
-    data = pd.read_csv('market_data.csv')
-    data = data[['open', 'high', 'low', 'close', 'volume']]
+    import pandas as pd  # type: ignore
 
-    env = MarketEnvironment(data)
-    agent = TradingAgent(state_size=data.shape[1] + 2, action_size=3)
+    market_data = pd.read_csv('market_data.csv')
+    market_data = market_data[['open', 'high', 'low', 'close', 'volume']]
+
+    env = MarketEnvironment(market_data)
+    agent = TradingAgent(state_size=market_data.shape[1] + 2, action_size=3)
 
     EPISODES = 1000
     BATCH_SIZE = 32
 
     for episode in range(EPISODES):
         current_state = env.reset()
-        TOTAL_REWARD = 0
+        total_reward = 0
 
         while not env.done:
-            action = agent.act(current_state)
-            next_state, reward, done = env.step(action)
-            agent.remember(current_state, action, reward, next_state, done)
-            current_state = next_state
-            TOTAL_REWARD += reward
+            act = agent.act(current_state)
+            next_st, rew, done = env.step(act)
+            agent.remember(current_state, act, rew, next_st, done)
+            current_state = next_st
+            total_reward += rew
 
             if done:
                 agent.update_target_model()
-                print(f"Episode: {episode + 1}/{EPISODES}, Total Reward: {TOTAL_REWARD:.2f}")
+                print(f"Episode: {episode + 1}/{EPISODES}, Total Reward: {total_reward:.2f}")
 
             if len(agent.memory.buffer) > BATCH_SIZE:
                 agent.replay(BATCH_SIZE)

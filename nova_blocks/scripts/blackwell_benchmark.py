@@ -4,29 +4,42 @@ NVIDIA Blackwell GPU Benchmark Suite for NOVA BLOCKS
 Comprehensive performance testing and validation of Blackwell optimizations
 """
 
-import time
-from datetime import datetime
 import json
 import os
-
-try:
-    import torch  # type: ignore
-    import torch.nn as nn  # type: ignore
-    from torch.cuda.amp import autocast, GradScaler  # type: ignore
-    TORCH_AVAILABLE = True
-except ImportError:
-    torch = None
-    nn = None
-    autocast = None
-    GradScaler = None
-    TORCH_AVAILABLE = False
+import time
+from datetime import datetime
 
 try:
     import numpy as np  # type: ignore
     NUMPY_AVAILABLE = True
 except ImportError:
-    np = None
+    np = None  # type: ignore
     NUMPY_AVAILABLE = False
+
+try:
+    import torch  # type: ignore
+    from torch import nn  # type: ignore
+    from torch.cuda.amp import autocast, GradScaler  # type: ignore
+    TORCH_AVAILABLE = True
+except ImportError:
+    torch = None  # type: ignore
+    nn = None  # type: ignore
+    autocast = None  # type: ignore
+    GradScaler = None  # type: ignore
+    TORCH_AVAILABLE = False
+
+try:
+    from nova_blocks.finance.ai_training_module import OptionsModel
+    from nova_blocks.finance.rl_trading_agent import TradingAgent
+    FINANCE_MODELS_AVAILABLE = True
+except ImportError:
+    FINANCE_MODELS_AVAILABLE = False
+
+try:
+    from nova_blocks.ai_embedded_gold_interface import BlackwellQuantumSimulator
+    QUANTUM_SIM_AVAILABLE = True
+except ImportError:
+    QUANTUM_SIM_AVAILABLE = False
 
 class BlackwellBenchmark:
     """NVIDIA Blackwell GPU Benchmark Suite for comprehensive performance testing."""
@@ -37,14 +50,18 @@ class BlackwellBenchmark:
         self.baseline_results = {}
 
         print("Blackwell Benchmark Suite Initialized")
-        print("   GPU Detected: {}".format(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None'))
-        print("   Blackwell GPU: {}".format('Yes' if self.is_blackwell else 'No'))
-        print("   CUDA Version: {}".format(torch.version.cuda if torch.cuda.is_available() else 'N/A'))
-        print("   PyTorch Version: {}".format(torch.__version__))
-        print("   NumPy Available: {}".format(NUMPY_AVAILABLE))
-        print("   Torch Available: {}".format(TORCH_AVAILABLE))
-        print("   NumPy RNG: {}".format('Generator' if hasattr(np.random, 'default_rng') else 'Legacy'))
-        print("   Module Name: {}".format(__name__))
+        gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None'
+        print(f"   GPU Detected: {gpu_name}")
+        print(f"   Blackwell GPU: {'Yes' if self.is_blackwell else 'No'}")
+        print(f"   CUDA Version: {torch.version.cuda if torch.cuda.is_available() else 'N/A'}")
+        print(f"   PyTorch Version: {torch.__version__}")
+        print(f"   NumPy Available: {NUMPY_AVAILABLE}")
+        print(f"   Torch Available: {TORCH_AVAILABLE}")
+        print(f"   Finance Models Available: {FINANCE_MODELS_AVAILABLE}")
+        print(f"   Quantum Sim Available: {QUANTUM_SIM_AVAILABLE}")
+        numpy_rng = "Generator" if hasattr(np.random, 'default_rng') else "Legacy"
+        print(f"   NumPy RNG: {numpy_rng}")
+        print(f"   Module Name: {__name__}")
 
     def _detect_blackwell_gpu(self):
         """Detect if Blackwell GPU is available"""
@@ -53,30 +70,37 @@ class BlackwellBenchmark:
         gpu_name = torch.cuda.get_device_name(0)
         return 'Blackwell' in gpu_name
 
+    def _run_benchmark_steps(self):
+        """Execute all benchmark steps in the suite."""
+        benchmark_steps = [
+            ("Memory bandwidth test", self._benchmark_memory_bandwidth),
+            ("Tensor core performance", self._benchmark_tensor_cores),
+            ("Mixed precision training", self._benchmark_mixed_precision),
+            ("AI model inference", self._benchmark_ai_models),
+            ("Quantum simulation performance", self._benchmark_quantum_simulations),
+        ]
+        for step_name, step_func in benchmark_steps:
+            self._execute_single_step(step_name, step_func)
+
+    def _execute_single_step(self, step_name, step_func):
+        """Execute a single benchmark step with consistent error handling."""
+        print(f"Running {step_name}...")
+        try:
+            step_func()
+        except (ImportError, RuntimeError, ValueError, TypeError) as e:
+            print(f"Warning: {step_name} failed with error: {str(e)}")
+
+    def _finalize_results(self):
+        """Finalize and save benchmark results."""
+        self._generate_comparison_report()
+        self._save_results()
+
     def run_comprehensive_benchmark(self):
         """Run complete benchmark suite"""
         print("\nStarting Comprehensive Blackwell Benchmark Suite...\n")
 
-        # Memory bandwidth test
-        self._benchmark_memory_bandwidth()
-
-        # Tensor core performance
-        self._benchmark_tensor_cores()
-
-        # Mixed precision training
-        self._benchmark_mixed_precision()
-
-        # AI model inference
-        self._benchmark_ai_models()
-
-        # Quantum simulation performance
-        self._benchmark_quantum_simulations()
-
-        # Generate comparison report
-        self._generate_comparison_report()
-
-        # Save results
-        self._save_results()
+        self._run_benchmark_steps()
+        self._finalize_results()
 
         print("\nBenchmark Suite Complete!")
         return self.results
@@ -235,71 +259,86 @@ class BlackwellBenchmark:
             'speedup': round(speedup, 2),
             'blackwell_optimized': self.is_blackwell
         }
-        print("Mixed precision test complete (Speedup: {:.2f}x)".format(speedup))
+        print(f"Mixed precision test complete (Speedup: {speedup:.2f}x)")
 
     def _benchmark_ai_models(self):
         """Benchmark NOVA BLOCKS AI models"""
         print("Testing NOVA BLOCKS AI Models...")
 
-        # Import and test finance models
+        if not FINANCE_MODELS_AVAILABLE:
+            self.results['ai_models'] = {'error': 'Finance models not available'}
+            print("AI models test skipped (models not available)")
+            return
+
         try:
-            from nova_blocks.finance.ai_training_module import OptionsModel
-            from nova_blocks.finance.rl_trading_agent import TradingAgent
-
-            # Test OptionsModel inference
-            options_model = OptionsModel(
-                input_size=10, hidden_size=128, num_layers=2, output_size=3
-            ).to(self.device)
-
-            # Generate test data
-            test_input = torch.randn(32, 60, 10).to(self.device)  # batch_size, seq_len, features
-
-            # Warm up
-            for _ in range(5):
-                with torch.no_grad():
-                    _ = options_model(test_input)
-            torch.cuda.synchronize()
-
-            # Benchmark inference
-            start_time = time.time()
-            for _ in range(100):
-                with torch.no_grad():
-                    _ = options_model(test_input)
-            torch.cuda.synchronize()
-            end_time = time.time()
-
-            inference_time = (end_time - start_time) / 100 * 1000  # ms per inference
-
-            # Test RL Agent
-            rl_agent = TradingAgent(state_size=10, action_size=3)
-            rng = np.random.default_rng()
-            test_state = rng.random((1, 10))
-
-            start_time = time.time()
-            for _ in range(1000):
-                _ = rl_agent.act(test_state)
-            end_time = time.time()
-
-            rl_inference_time = (end_time - start_time) / 1000 * 1000  # ms per action
+            options_time = self._benchmark_options_model()
+            rl_time = self._benchmark_rl_agent()
+            throughput = round(32 / (options_time / 1000), 1)
 
             self.results['ai_models'] = {
-                'options_model_inference_ms': round(inference_time, 3),
-                'rl_agent_inference_ms': round(rl_inference_time, 3),
-                'throughput_samples_s': round(32 / (inference_time / 1000), 1)
+                'options_model_inference_ms': round(options_time, 3),
+                'rl_agent_inference_ms': round(rl_time, 3),
+                'throughput_samples_s': throughput
             }
             print("AI models test complete")
 
         except ImportError as e:
-            self.results['ai_models'] = {'error': 'Import failed: {}'.format(str(e))}
-            print("AI models test skipped (import error)")
+            self._handle_ai_model_error('Import error', e)
+        except RuntimeError as e:
+            self._handle_ai_model_error('Runtime error', e)
+
+    def _benchmark_options_model(self):
+        """Benchmark OptionsModel inference"""
+        options_model = OptionsModel(
+            input_size=10, hidden_size=128, num_layers=2, output_size=3
+        ).to(self.device)
+
+        test_input = torch.randn(32, 60, 10).to(self.device)
+
+        # Warm up
+        for _ in range(5):
+            with torch.no_grad():
+                _ = options_model(test_input)
+        torch.cuda.synchronize()
+
+        # Benchmark
+        start_time = time.time()
+        for _ in range(100):
+            with torch.no_grad():
+                _ = options_model(test_input)
+        torch.cuda.synchronize()
+        end_time = time.time()
+
+        return (end_time - start_time) / 100 * 1000  # ms per inference
+
+    def _benchmark_rl_agent(self):
+        """Benchmark RL Agent inference"""
+        rl_agent = TradingAgent(state_size=10, action_size=3)
+        rng = np.random.default_rng()
+        test_state = rng.random((1, 10))
+
+        start_time = time.time()
+        for _ in range(1000):
+            _ = rl_agent.act(test_state)
+        end_time = time.time()
+
+        return (end_time - start_time) / 1000 * 1000  # ms per action
+
+    def _handle_ai_model_error(self, error_type, exception):
+        """Handle AI model benchmarking errors"""
+        self.results['ai_models'] = {'error': f'{error_type}: {str(exception)}'}
+        print(f"AI models test failed due to {error_type.lower()}: {str(exception)}")
 
     def _benchmark_quantum_simulations(self):
         """Benchmark quantum simulation performance"""
         print("Testing Quantum Simulations...")
 
-        try:
-            from nova_blocks.ai_embedded_gold_interface import BlackwellQuantumSimulator
+        if not QUANTUM_SIM_AVAILABLE:
+            self.results['quantum_simulations'] = {'error': 'Quantum simulator not available'}
+            print("Quantum simulations test skipped (simulator not available)")
+            return
 
+        try:
             simulator = BlackwellQuantumSimulator()
 
             # Test quantum computation
@@ -322,8 +361,11 @@ class BlackwellBenchmark:
             print("Quantum simulations test complete")
 
         except ImportError as e:
-            self.results['quantum_simulations'] = {'error': 'Import failed: {}'.format(str(e))}
-            print("Quantum simulations test skipped (import error)")
+            self.results['quantum_simulations'] = {'error': f'Import error: {str(e)}'}
+            print(f"Quantum simulations test failed due to import error: {str(e)}")
+        except RuntimeError as e:
+            self.results['quantum_simulations'] = {'error': f'Runtime error: {str(e)}'}
+            print(f"Quantum simulations test failed due to runtime error: {str(e)}")
 
     def _generate_comparison_report(self):
         """Generate comparison with baseline performance"""
@@ -370,7 +412,7 @@ class BlackwellBenchmark:
                 'results': self.results
             }, f, indent=2)
 
-        print("Results saved to {}".format(filename))
+        print(f"Results saved to {filename}")
 
         # Generate summary report
         self._generate_summary_report()
@@ -381,61 +423,84 @@ class BlackwellBenchmark:
         print("BLACKWELL BENCHMARK SUMMARY REPORT")
         print("="*60)
 
-        if self.is_blackwell:
-            print("Blackwell GPU detected - Full optimization active")
-        else:
-            print("Non-Blackwell GPU - Limited optimizations available")
+        gpu_status = ("Blackwell GPU detected - Full optimization active"
+                      if self.is_blackwell else
+                      "Non-Blackwell GPU - Limited optimizations available")
+        print(gpu_status)
 
-        if 'memory_bandwidth' in self.results:
-            print("\nMemory Bandwidth:")
-            if isinstance(self.results['memory_bandwidth'], dict) and 'error' not in self.results['memory_bandwidth']:
-                for size, data in self.results['memory_bandwidth'].items():
-                    if 'error' not in data:
-                        print("   {}: H2D {} GB/s, D2H {} GB/s".format(
-                            size, data['h2d_gb_s'], data['d2h_gb_s']))
-            elif 'error' in self.results['memory_bandwidth']:
-                print("   {}".format(self.results['memory_bandwidth']['error']))
+        # Define sections to print
+        sections = [
+            ('memory_bandwidth', self._print_memory_bandwidth),
+            ('tensor_cores', self._print_tensor_cores),
+            ('mixed_precision', self._print_mixed_precision),
+            ('ai_models', self._print_ai_models),
+            ('quantum_simulations', self._print_quantum_simulations),
+            ('comparison', self._print_comparison),
+        ]
 
-        if 'tensor_cores' in self.results:
-            print("\nTensor Core Performance:")
-            if isinstance(self.results['tensor_cores'], dict) and 'error' not in self.results['tensor_cores']:
-                for size, data in self.results['tensor_cores'].items():
-                    if 'error' not in data:
-                        print("   {}: {} TFLOPS ({}ms)".format(
-                            size, data['tflops'], data['time_ms']))
-            elif 'error' in self.results['tensor_cores']:
-                print("   {}".format(self.results['tensor_cores']['error']))
-
-        if 'mixed_precision' in self.results:
-            mp = self.results['mixed_precision']
-            print("\nMixed Precision Training:")
-            print("   FP32: {}s, FP16: {}s".format(mp['fp32_time_s'], mp['fp16_time_s']))
-            print("   Speedup: {}x".format(mp['speedup']))
-
-        if 'ai_models' in self.results:
-            ai = self.results['ai_models']
-            print("\nAI Model Performance:")
-            print("   Options Model: {}ms per inference".format(
-                ai.get('options_model_inference_ms', 'N/A')))
-            print("   RL Agent: {}ms per action".format(
-                ai.get('rl_agent_inference_ms', 'N/A')))
-            print("   Throughput: {} samples/s".format(
-                ai.get('throughput_samples_s', 'N/A')))
-
-        if 'quantum_simulations' in self.results:
-            qs = self.results['quantum_simulations']
-            print("\nQuantum Simulations:")
-            print("   Simulation time: {}ms".format(
-                qs.get('simulation_time_ms', 'N/A')))
-            print("   Blackwell accelerated: {}".format(
-                qs.get('blackwell_accelerated', False)))
-
-        if 'comparison' in self.results and self.results['comparison']:
-            print("\nPerformance Improvements:")
-            for metric, improvement in self.results['comparison'].items():
-                print("   {}: {}x improvement".format(metric, improvement))
+        for key, print_func in sections:
+            if key in self.results:
+                print_func()
 
         print("\n" + "="*60)
+
+    def _print_memory_bandwidth(self):
+        print("\nMemory Bandwidth:")
+        mb = self.results['memory_bandwidth']
+        if isinstance(mb, dict) and 'error' not in mb:
+            for size, data in mb.items():
+                if 'error' not in data:
+                    h2d = data['h2d_gb_s']
+                    d2h = data['d2h_gb_s']
+                    print(f"   {size}: H2D {h2d} GB/s, D2H {d2h} GB/s")
+        elif 'error' in mb:
+            print(f"   {mb['error']}")
+
+    def _print_tensor_cores(self):
+        print("\nTensor Core Performance:")
+        tc = self.results['tensor_cores']
+        if isinstance(tc, dict) and 'error' not in tc:
+            for size, data in tc.items():
+                if 'error' not in data:
+                    tflops = data['tflops']
+                    time_ms = data['time_ms']
+                    print(f"   {size}: {tflops} TFLOPS ({time_ms}ms)")
+        elif 'error' in tc:
+            print(f"   {tc['error']}")
+
+    def _print_mixed_precision(self):
+        mp = self.results['mixed_precision']
+        print("\nMixed Precision Training:")
+        fp32_time = mp['fp32_time_s']
+        fp16_time = mp['fp16_time_s']
+        speedup = mp['speedup']
+        print(f"   FP32: {fp32_time}s, FP16: {fp16_time}s")
+        print(f"   Speedup: {speedup}x")
+
+    def _print_ai_models(self):
+        ai = self.results['ai_models']
+        print("\nAI Model Performance:")
+        options_inf = ai.get('options_model_inference_ms', 'N/A')
+        rl_inf = ai.get('rl_agent_inference_ms', 'N/A')
+        throughput = ai.get('throughput_samples_s', 'N/A')
+        print("   Options Model:", options_inf, "ms per inference")
+        print("   RL Agent:", rl_inf, "ms per action")
+        print("   Throughput:", throughput, "samples/s")
+
+    def _print_quantum_simulations(self):
+        qs = self.results['quantum_simulations']
+        print("\nQuantum Simulations:")
+        sim_time = qs.get('simulation_time_ms', 'N/A')
+        accelerated = qs.get('blackwell_accelerated', False)
+        print(f"   Simulation time: {sim_time}ms")
+        print(f"   Blackwell accelerated: {accelerated}")
+
+    def _print_comparison(self):
+        comp = self.results['comparison']
+        if comp:
+            print("\nPerformance Improvements:")
+            for metric, improvement in comp.items():
+                print(f"   {metric}: {improvement}x improvement")
 
 def main():
     """Main benchmark execution"""
@@ -443,8 +508,14 @@ def main():
         benchmark = BlackwellBenchmark()
         results = benchmark.run_comprehensive_benchmark()
         return results
-    except Exception as e:
-        print("Benchmark failed: {}".format(str(e)))
+    except KeyboardInterrupt:
+        print("Benchmark interrupted by user")
+        return None
+    except ImportError as e:
+        print(f"Benchmark failed due to import error: {str(e)}")
+        return None
+    except RuntimeError as e:
+        print(f"Benchmark failed due to runtime error: {str(e)}")
         return None
 
 if __name__ == "__main__":

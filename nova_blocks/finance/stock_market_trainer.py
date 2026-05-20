@@ -94,8 +94,18 @@ class StockMarketTrainer:
 
         return np.array(tech_sequences), np.array(fund_sequences), np.array(targets)
     
-    def train(self, tech_sequences, fund_sequences, targets, epochs=100):
+    def train(self, tech_data, fund_data, targets, epochs=100):
         """Train the hybrid model"""
+        # Fit scalers if not already done
+        if not self.scalers:
+            # For sequences, fit scalers on flattened data
+            self.scalers['tech'] = RobustScaler()
+            self.scalers['fund'] = RobustScaler()
+            # Reshape tech_data to 2D for scaling
+            tech_reshaped = tech_data.reshape(-1, tech_data.shape[-1])
+            self.scalers['tech'].fit(tech_reshaped)
+            self.scalers['fund'].fit(fund_data)
+
         self.model.compile(
             optimizer=tf.keras.optimizers.Adam(0.0005),
             loss='mse',
@@ -103,7 +113,7 @@ class StockMarketTrainer:
         )
 
         history = self.model.fit(
-            [tech_sequences, fund_sequences], targets,
+            [tech_data, fund_data], targets,
             epochs=epochs,
             batch_size=64,
             validation_split=0.2,
@@ -116,13 +126,13 @@ class StockMarketTrainer:
     
     def predict_market(self, tech_data, fund_data):
         """Generate market predictions"""
-        # Preprocess input data
-        tech_data_scaled = self.scalers['tech'].transform(tech_data)[-60:]
-        fund_data_scaled = self.scalers['fund'].transform(fund_data.iloc[-1:])
+        # Preprocess input data - reshape tech_data for scaling
+        tech_reshaped = tech_data.reshape(-1, tech_data.shape[-1])
+        tech_data_scaled = self.scalers['tech'].transform(tech_reshaped)
+        fund_data_scaled = self.scalers['fund'].transform(fund_data)
 
-        # Reshape for prediction
-        tech_data_scaled = np.expand_dims(tech_data_scaled, axis=0)
-        fund_data_scaled = np.expand_dims(fund_data_scaled, axis=0)
+        # Reshape back to original shape for prediction
+        tech_data_scaled = tech_data_scaled.reshape(tech_data.shape)
 
         # Make prediction
         return self.model.predict([tech_data_scaled, fund_data_scaled])

@@ -1,0 +1,30 @@
+{
+  "timestamp": "20251017_225425",
+  "gpu_info": {
+    "name": "CPU",
+    "is_blackwell": false,
+    "cuda_version": null,
+    "pytorch_version": "2.8.0+cpu"
+  },
+  "results": {
+    "memory_bandwidth": {
+      "error": "No CUDA GPU available"
+    },
+    "tensor_cores": {
+      "error": "Blackwell GPU required for tensor core tests"
+    },
+    "mixed_precision": {
+      "fp32_time_s": 7.866,
+      "fp16_time_s": 7.866,
+      "speedup": 1.0,
+      "blackwell_optimized": false
+    },
+    "ai_models": {
+      "error": "Finance models not available"
+    },
+    "quantum_simulations": {
+      "error": "Quantum simulator not available"
+    },
+    "comparison": {}
+  }
+}

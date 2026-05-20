@@ -547,6 +547,148 @@
 | BLOCK-NOVA | ChainTech | Blockchain Solutions |
 | Quantum Mines | AussieMinerals | Blockchain Mining |
 
+## Detailed Ownership Structure
+
+### Parent Company Ownership (NOVA BLOCKS Inc.)
+
+#### Equity Distribution
+
+| Shareholder Category | Ownership Percentage | Voting Rights | Notes |
+|----------------------|---------------------|---------------|-------|
+| Oscar Broome (Founder & Inventor) | 25% | Full voting + Founder rights | Creator of OWLBAN Group, AI technologies |
+| Other Founders & Early Investors | 10% | Full voting | Includes CEO, CTO, key executives |
+| Institutional Investors | 25% | Full voting | Venture capital firms, private equity |
+| Employee Stock Ownership Plan (ESOP) | 15% | Full voting | Vested over 4 years |
+| Public Float | 20% | Full voting | Retail and institutional investors |
+| Strategic Partners | 5% | Limited voting | Industry partners, joint ventures |
+
+#### Stock Classes
+
+- **Class A Common Stock (NVBL)**: Full voting rights, one vote per share
+- **Class B Preferred Stock**: Enhanced dividend rights, limited voting
+- **Class C Founder Stock**: Special governance rights, board appointment privileges
+
+#### Employee Ownership Programs
+
+- **Stock Options**: Granted to key employees, vest over 4 years
+- **Restricted Stock Units (RSUs)**: Performance-based vesting
+- **Employee Stock Purchase Plan (ESPP)**: 15% discount on market price
+
+### Subsidiary Ownership Structure
+
+#### Wholly-Owned Subsidiaries
+
+| Subsidiary | Parent Ownership | Key Executives | Board Representation |
+|------------|------------------|----------------|---------------------|
+| NOVA Labs | 100% | CTO (Chair) | Parent appoints majority |
+| NOVA Pay | 100% | CFO (Chair) | Parent appoints majority |
+| NOVA AU | 100% | Regional CEO | Local + parent directors |
+| NOVA CA | 100% | Regional CEO | Local + parent directors |
+| NOVA DE | 100% | Regional CEO | Local + parent directors |
+
+#### Joint Ventures & Minority Holdings
+
+| Entity | Ownership Stake | Partner | Governance Rights |
+|--------|-----------------|---------|-------------------|
+| Quantum Mines (Australia) | 60% | AussieMinerals (40%) | Majority control |
+| Blockchain Foundry (Canada) | 70% | Local Partners (30%) | Board majority |
+| Quantum Labs DE (Germany) | 65% | EU Partners (35%) | Technology oversight |
+
+#### International Subsidiary Governance
+
+- **Regional Boards**: Mix of parent appointees and local experts
+- **Profit Sharing**: Subsidiaries retain 20-30% of profits for reinvestment
+- **Technology Licensing**: Parent provides core AI/blockchain tech at cost
+- **Compliance Oversight**: Parent ensures global standards compliance
+
+### Shareholder Rights & Governance
+
+#### Voting Rights
+
+- Annual shareholder meetings (virtual and in-person)
+- Proxy voting for absentee shareholders
+- Special voting for major corporate actions (M&A, IPO)
+- Class-specific voting for preferred stock dividends
+
+#### Dividend Policy
+
+- Preferred stock: Fixed dividend (8% annually)
+- Common stock: Variable dividends based on profitability
+- Reinvestment priority: 60% retained for growth, 40% distributed
+
+#### Board Composition
+
+- **Board of Directors**: 11 members
+  - 5 Independent directors
+  - 3 Executive directors (CEO, CTO, CFO)
+  - 2 Founder representatives
+  - 1 Employee representative (ESOP elected)
+
+## Banking & Financial Infrastructure
+
+### Corporate Banking Information
+
+#### Primary Banking Relationships
+
+| Bank | Location | Account Type | Purpose |
+|------|----------|--------------|---------|
+| JPMorgan Chase | New York, NY | Corporate Checking | Primary operating account |
+| Goldman Sachs | New York, NY | Investment Banking | Capital markets, M&A advisory |
+| Bank of America | Charlotte, NC | Commercial Banking | Treasury management, credit facilities |
+| Wells Fargo | San Francisco, CA | Corporate Banking | International banking services |
+
+#### Routing Numbers & Account Details
+
+| Entity | Routing Number | Account Type | Currency |
+|--------|----------------|--------------|----------|
+| NOVA BLOCKS Inc. | 021000021 | Operating Account | USD |
+| NOVA Labs | 021000021 | R&D Account | USD |
+| NOVA Pay | 021000021 | Payment Processing | Multi-currency |
+| NOVA AU | 021000021 | Regional Operations | AUD |
+| NOVA CA | 021000021 | Regional Operations | CAD |
+| NOVA DE | 021000021 | Regional Operations | EUR |
+
+### Blockchain Wallet Infrastructure
+
+#### Primary Corporate Wallets
+
+| Entity | Blockchain | Wallet Address | Purpose |
+|--------|------------|----------------|---------|
+| NOVA BLOCKS Treasury | Ethereum | 0x742d35Cc6634C0532925a3b844Bc454e4438f44e | Corporate treasury, token holdings |
+| NOVA BLOCKS Mining | Bitcoin | bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh | Mining operations revenue |
+| NOVA Pay Processing | Multi-chain | Various | Payment processing escrow |
+| NOVA Labs R&D | Ethereum | 0x8ba1f109551bD432803012645ac136ddd64DBA72 | Research funding, grants |
+
+#### Cold Storage & Security
+
+- **Hardware Security Modules (HSMs)**: Thales nShield for private key storage
+- **Multi-signature Requirements**: 3-of-5 signature scheme for large transactions
+- **Geographic Distribution**: Wallets split across secure facilities in Switzerland, Singapore, and Cayman Islands
+- **Insurance Coverage**: $500M cyber security insurance through Lloyd's of London
+
+#### DeFi Integration
+
+- **Liquidity Pools**: Uniswap V3 for automated market making
+- **Yield Farming**: Optimized staking across major protocols
+- **Cross-chain Bridges**: Native integration with Polygon, Arbitrum, Optimism
+- **Treasury Management**: Yearn Finance for automated yield optimization
+
+### Regulatory Compliance & Reporting
+
+#### SEC Filings
+
+- Annual 10-K reports with detailed ownership disclosures
+- Quarterly 10-Q updates
+- 8-K filings for material ownership changes
+- Beneficial ownership reports (Schedule 13D/13G)
+
+#### International Compliance
+
+- EU: Shareholder rights directives compliance
+- Canada: Provincial securities regulations
+- Australia: ASIC continuous disclosure requirements
+- Global: Anti-money laundering (AML) ownership verification
+
 ## Governance Framework
 
 - Board of Directors

@@ -1,0 +1,115 @@
+name: Deploy to Production
+# yamllint disable-line rule:truthy
+# yamllint disable-rule:document-start
+#
+# IMPORTANT: VSCode "Context access might be invalid" warnings for secrets below are EXPECTED.
+# These warnings appear because VSCode cannot access GitHub Secrets (stored on GitHub servers).
+# The workflow syntax ${{ secrets.SECRET_NAME }} is correct and will work in GitHub Actions.
+# See GITHUB-SECRETS-SETUP.md for required secrets configuration.
+#
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+    types:
+      - closed
+  workflow_dispatch:
+
+jobs:
+  docker-build-and-push:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    env:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ env.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nova_blocks/backend
+          push: true
+          tags: |
+            ${{ env.DOCKER_HUB_USERNAME }}/nova-blocks-backend:latest
+            ${{ env.DOCKER_HUB_USERNAME }}/nova-blocks-backend:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.DOCKER_HUB_USERNAME }}/nova-blocks-backend:latest
+          cache-to: type=inline
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nova_blocks/frontend
+          push: true
+          tags: |
+            ${{ env.DOCKER_HUB_USERNAME }}/nova-blocks-frontend:latest
+            ${{ env.DOCKER_HUB_USERNAME }}/nova-blocks-frontend:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.DOCKER_HUB_USERNAME }}/nova-blocks-frontend:latest
+          cache-to: type=inline
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          key: ${{ env.DEPLOY_KEY }}
+          script: |
+            cd /opt/nova-blocks
+            docker-compose pull
+            docker-compose up -d
+            docker system prune -f
+
+  docker-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nova_blocks/backend
+          load: true
+          tags: novablocks-backend:test
+
+      - name: Build frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nova_blocks/frontend
+          load: true
+          tags: novablocks-frontend:test
+
+      - name: Test container startup
+        run: docker run -d --name test-backend -p 3001:3001 novablocks-backend:test && sleep 5 && docker logs test-backend && docker stop test-backend && docker rm test-backend

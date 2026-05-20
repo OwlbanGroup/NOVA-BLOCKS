@@ -4,9 +4,12 @@
   "description": "Backend for NOVA BLOCKS application with NVIDIA Blackwell GPU acceleration",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node index.js",
     "gpu-setup": "node scripts/setup-blackwell.js"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   },
   "keywords": ["nova-blocks", "gpu", "blackwell", "ai", "tensorflow"],
   "author": "",
