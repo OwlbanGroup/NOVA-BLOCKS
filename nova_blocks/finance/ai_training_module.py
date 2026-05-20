@@ -211,10 +211,12 @@ class OptionsAITrainer:
 
             print(f'Epoch {epoch+1}/{epochs}, Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}')
 
-            # Early stopping
-            if epoch > 5 and avg_val_loss > min(self.history['val_loss'][-5:]):
-                print("Early stopping")
-                break
+# FIX: Early stopping - check if current > minimum of previous 5 epochs (not min of last 5)
+            if epoch > 5:
+                min_prev_5 = min(self.history['val_loss'][-6:-1])  # Exclude current epoch
+                if avg_val_loss > min_prev_5:
+                    print(f"Early stopping at epoch {epoch+1} - no improvement for 5 epochs")
+                    break
 
     def evaluate(self):
         """Evaluate model performance"""
