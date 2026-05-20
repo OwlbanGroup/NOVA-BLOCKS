@@ -58,7 +58,9 @@ class BlackwellGPUInference {
 
 // Check if GPU is ready before operations
     async ensureInitialized() {
-        if (!this.initialized) {
+        // Properly await initialization - check init state with Boolean() to handle any return value
+        const isInitialized = Boolean(this.initialized);
+        if (!isInitialized) {
             if (this.initPromise) {
                 await this.initPromise;
             } else {

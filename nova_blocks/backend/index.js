@@ -51,8 +51,8 @@ app.post('/api/gpu/predict/:modelName', async (req, res) => {
     if (!Array.isArray(input) || input.length === 0) {
       return res.status(400).json({ error: 'Input must be a non-empty array' });
     }
-    // Validate input is numeric
-    if (!input.every(val => typeof val === 'number' && !isNaN(val))) {
+// Validate input is numeric
+    if (!input.every(val => typeof val === 'number' && !Number.isNaN(val))) {
       return res.status(400).json({ error: 'Input must contain only numeric values' });
     }
 
@@ -76,8 +76,8 @@ app.post('/api/gpu/batch-predict/:modelName', async (req, res) => {
     if (inputs.length === 0) {
       return res.status(400).json({ error: 'Batch inputs array cannot be empty' });
     }
-    // Validate all inputs are arrays of numbers
-    if (!inputs.every(item => Array.isArray(item) && item.every(val => typeof val === 'number' && !isNaN(val)))) {
+// Validate all inputs are arrays of numbers
+    if (!inputs.every(item => Array.isArray(item) && item.every(val => typeof val === 'number' && !Number.isNaN(val)))) {
       return res.status(400).json({ error: 'Each input must be an array of numeric values' });
     }
     // Limit batch size for security
