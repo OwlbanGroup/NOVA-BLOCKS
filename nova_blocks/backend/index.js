@@ -37,8 +37,16 @@ app.post('/api/gpu/predict/:modelName', async (req, res) => {
     const { modelName } = req.params;
     const { input } = req.body;
 
+    // FIX: Input validation
     if (!input) {
       return res.status(400).json({ error: 'Input data required' });
+    }
+    if (!Array.isArray(input) || input.length === 0) {
+      return res.status(400).json({ error: 'Input must be a non-empty array' });
+    }
+    // Validate input is numeric
+    if (!input.every(val => typeof val === 'number' && !isNaN(val))) {
+      return res.status(400).json({ error: 'Input must contain only numeric values' });
     }
 
     const prediction = await gpuInference.predict(modelName, input);
@@ -54,8 +62,20 @@ app.post('/api/gpu/batch-predict/:modelName', async (req, res) => {
     const { modelName } = req.params;
     const { inputs } = req.body;
 
+    // FIX: Input validation
     if (!inputs || !Array.isArray(inputs)) {
       return res.status(400).json({ error: 'Batch inputs array required' });
+    }
+    if (inputs.length === 0) {
+      return res.status(400).json({ error: 'Batch inputs array cannot be empty' });
+    }
+    // Validate all inputs are arrays of numbers
+    if (!inputs.every(item => Array.isArray(item) && item.every(val => typeof val === 'number' && !isNaN(val)))) {
+      return res.status(400).json({ error: 'Each input must be an array of numeric values' });
+    }
+    // Limit batch size for security
+    if (inputs.length > 100) {
+      return res.status(400).json({ error: 'Batch size cannot exceed 100 inputs' });
     }
 
     const predictions = await gpuInference.batchPredict(modelName, inputs);
@@ -70,8 +90,19 @@ app.post('/api/gpu/load-model', async (req, res) => {
   try {
     const { modelName, modelPath } = req.body;
 
+    // FIX: Input validation
     if (!modelName || !modelPath) {
       return res.status(400).json({ error: 'Model name and path required' });
+    }
+    if (typeof modelName !== 'string' || modelName.length === 0) {
+      return res.status(400).json({ error: 'Model name must be a non-empty string' });
+    }
+    if (typeof modelPath !== 'string' || modelPath.length === 0) {
+      return res.status(400).json({ error: 'Model path must be a non-empty string' });
+    }
+    // Sanitize model name to prevent path traversal
+    if (modelName.includes('..') || modelName.includes('/') || modelName.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid model name' });
     }
 
     const success = await gpuInference.loadModel(modelName, modelPath);
@@ -89,15 +120,14 @@ app.get('/', (req, res) => {
   });
 });
 
-// Database connection
-mongoose.connect('mongodb://localhost:27017/nova-blocks', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('Connected to MongoDB');
-}).catch(err => {
-  console.error('MongoDB connection error:', err);
-});
+// Database connection - FIX: removed deprecated Mongoose 7+ options
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nova-blocks')
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+  });
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
