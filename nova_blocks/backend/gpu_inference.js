@@ -12,10 +12,13 @@ class BlackwellGPUInference {
         this.models = new Map();
         this.gpu = new GPU();
         this.blackwellDetected = false;
-        this.initializeGPU();
+        this.initialized = false;
+        // FIX: Initialize synchronously to avoid race condition
+        // Call init() after construction: await gpuInference.init()
+        this.initPromise = this._initializeGPU();
     }
 
-    async initializeGPU() {
+    async _initializeGPU() {
         try {
             // Check for Blackwell GPU
             const gpuInfo = await nvidiaSmi();
@@ -31,8 +34,23 @@ class BlackwellGPUInference {
             } else {
                 console.log('⚠️  Blackwell GPU not detected, using standard GPU acceleration');
             }
+            this.initialized = true;
         } catch (error) {
             console.error('GPU initialization failed:', error);
+            this.initialized = true;
+        }
+    }
+
+    // FIX: Provide async init method to properly await initialization
+    async init() {
+        await this.initPromise;
+        return this;
+    }
+
+    // Check if GPU is ready before operations
+    async ensureInitialized() {
+        if (!this.initialized) {
+            await this.initPromise;
         }
     }
 
@@ -48,15 +66,18 @@ class BlackwellGPUInference {
         }
     }
 
-    async predict(modelName, inputData) {
+async predict(modelName, inputData) {
         const model = this.models.get(modelName);
         if (!model) {
             throw new Error(`Model ${modelName} not loaded`);
         }
 
+        let tensorInput = null;
+        let prediction = null;
+        
         try {
-            const tensorInput = tf.tensor(inputData);
-            const prediction = model.predict(tensorInput);
+            tensorInput = tf.tensor(inputData);
+            prediction = model.predict(tensorInput);
 
             // Blackwell optimization: Use GPU memory efficiently
             if (this.blackwellDetected) {
@@ -64,12 +85,17 @@ class BlackwellGPUInference {
             }
 
             const result = prediction.dataSync();
-            tensorInput.dispose();
-            prediction.dispose();
+            
+            // FIX: Proper cleanup in try block
+            if (tensorInput) tensorInput.dispose();
+            if (prediction) prediction.dispose();
 
             return result;
         } catch (error) {
+            // FIX: Memory leak fix - dispose tensors in catch block
             console.error('Prediction failed:', error);
+            if (tensorInput) tensorInput.dispose();
+            if (prediction) prediction.dispose();
             throw error;
         }
     }
@@ -88,16 +114,19 @@ class BlackwellGPUInference {
         return result;
     }
 
-    // Blackwell-optimized batch processing
+// Blackwell-optimized batch processing
     async batchPredict(modelName, batchInputs) {
         const model = this.models.get(modelName);
         if (!model) {
             throw new Error(`Model ${modelName} not loaded`);
         }
 
+        let tensorBatch = null;
+        let predictions = null;
+        
         try {
-            const tensorBatch = tf.tensor(batchInputs);
-            const predictions = model.predict(tensorBatch);
+            tensorBatch = tf.tensor(batchInputs);
+            predictions = model.predict(tensorBatch);
 
             if (this.blackwellDetected) {
                 // Use Blackwell's parallel processing capabilities
@@ -105,12 +134,17 @@ class BlackwellGPUInference {
             }
 
             const results = predictions.arraySync();
-            tensorBatch.dispose();
-            predictions.dispose();
+            
+            // FIX: Proper cleanup in try block
+            if (tensorBatch) tensorBatch.dispose();
+            if (predictions) predictions.dispose();
 
             return results;
         } catch (error) {
+            // FIX: Memory leak fix - dispose tensors in catch block
             console.error('Batch prediction failed:', error);
+            if (tensorBatch) tensorBatch.dispose();
+            if (predictions) predictions.dispose();
             throw error;
         }
     }
