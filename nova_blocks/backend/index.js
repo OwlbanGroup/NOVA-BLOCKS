@@ -6,13 +6,20 @@ const pqcrypto = require('pqcrypto');
 const BlackwellGPUInference = require('./gpu_inference');
 
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.PORT || 5000;
 
 // Initialize Blackwell GPU Inference
 const gpuInference = new BlackwellGPUInference();
 
 // Middleware
-app.use(cors());
+// CORS configuration - allow specific origins from environment variable for security
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : false,
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 app.use(morgan('combined'));
 app.use(express.json());
 

@@ -13,9 +13,15 @@ class BlackwellGPUInference {
         this.gpu = new GPU();
         this.blackwellDetected = false;
         this.initialized = false;
-        // FIX: Initialize synchronously to avoid race condition
-        // Call init() after construction: await gpuInference.init()
-        this.initPromise = this._initializeGPU();
+        this.initPromise = null;
+    }
+
+    // Factory method with await to properly initialize asynchronously
+    static async create() {
+        const instance = new BlackwellGPUInference();
+        instance.initPromise = instance._initializeGPU();
+        await instance.initPromise;
+        return instance;
     }
 
     async _initializeGPU() {
@@ -23,7 +29,7 @@ class BlackwellGPUInference {
             // Check for Blackwell GPU
             const gpuInfo = await nvidiaSmi();
             this.blackwellDetected = gpuInfo.some(gpu =>
-                gpu.name && gpu.name.includes('Blackwell')
+                gpu.name?.includes('Blackwell')
             );
 
             if (this.blackwellDetected) {
@@ -41,16 +47,23 @@ class BlackwellGPUInference {
         }
     }
 
-    // FIX: Provide async init method to properly await initialization
+    // Provide async init method to properly await initialization
     async init() {
+        if (!this.initPromise) {
+            this.initPromise = this._initializeGPU();
+        }
         await this.initPromise;
         return this;
     }
 
-    // Check if GPU is ready before operations
+// Check if GPU is ready before operations
     async ensureInitialized() {
         if (!this.initialized) {
-            await this.initPromise;
+            if (this.initPromise) {
+                await this.initPromise;
+            } else {
+                await this.init();
+            }
         }
     }
 
@@ -66,7 +79,7 @@ class BlackwellGPUInference {
         }
     }
 
-async predict(modelName, inputData) {
+    async predict(modelName, inputData) {
         const model = this.models.get(modelName);
         if (!model) {
             throw new Error(`Model ${modelName} not loaded`);
@@ -114,7 +127,7 @@ async predict(modelName, inputData) {
         return result;
     }
 
-// Blackwell-optimized batch processing
+    // Blackwell-optimized batch processing
     async batchPredict(modelName, batchInputs) {
         const model = this.models.get(modelName);
         if (!model) {
@@ -159,7 +172,7 @@ async predict(modelName, inputData) {
 
     async cleanup() {
         // Dispose all loaded models
-        for (const [name, model] of this.models) {
+        for (const [, model] of this.models) {
             model.dispose();
         }
         this.models.clear();
