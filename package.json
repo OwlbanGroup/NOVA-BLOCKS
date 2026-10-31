@@ -25,8 +25,8 @@
     "deploy": "docker-compose up -d --build"
   },
   "devDependencies": {
-    "docker-compose": "^1.29.2"
-  },
+  }
+  ,
   "keywords": [
     "nova-blocks",
     "gpu",
