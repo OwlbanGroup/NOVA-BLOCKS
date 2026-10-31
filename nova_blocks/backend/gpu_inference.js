@@ -43,7 +43,14 @@ class BlackwellGPUInference {
             this.initialized = true;
         } catch (error) {
             console.error('GPU initialization failed:', error);
-            this.initialized = true;
+            // FIX: Ensure cleanup on initialization failure
+            // TensorFlow may have allocated partial resources
+            if (tf) {
+                tf.disposeVariables();
+            }
+            this.initialized = false;
+            // Re-throw or handle gracefully - allow app to start without GPU
+            // but mark as not initialized so operations will fail appropriately
         }
     }
 
@@ -152,6 +159,9 @@ class BlackwellGPUInference {
                 result[y][x] = kernel(a, b, n);
             }
         }
+        // FIX: Proper kernel disposal to prevent GPU memory leaks
+        kernel.dispose();
+        
         return result;
     }
 

@@ -1,3 +1,5 @@
+const joi = require('joi');  // NEW: For input validation
+
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -5,6 +7,8 @@ const mongoose = require('mongoose');
 const pqcrypto = require('pqcrypto');
 const BlackwellGPUInference = require('./gpu_inference');
 const { logger, createRequestContext } = require('./logger');  // NEW: Winston logger
+const { validateRequest, matrixMultiplySchema, healthCheckSchema } = require('./middleware/validationMiddleware');  // NEW: Input validation middleware
+const { errorMiddleware, wrapAsync } = require('./middleware/errorMiddleware');  // NEW: Error handling middleware
 
 const app = express();
 app.disable('x-powered-by');
@@ -16,8 +20,7 @@ const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
   logger.error(`❌ Missing required environment variables: ${missingEnvVars.join(', ')}`);
-  console.error(`❌ Missing required environment variables: ${missingEnvVars.join(', ')}`);
-  console.error('Please set the required environment variables and restart the application.');
+  logger.error('Please set the required environment variables and restart the application.');
   process.exit(1);
 }
 
@@ -25,8 +28,22 @@ if (missingEnvVars.length > 0) {
 const gpuInference = new BlackwellGPUInference();
 
 // Rate limiting - prevent brute force attacks
-const limiter = require('./middleware/rateLimitMiddleware');
-app.use('/api/', limiter);
+const { generalLimiter, authLimiter, gpuLimiter } = require('./middleware/rateLimitMiddleware');
+
+// Apply general rate limiter to all API routes
+app.use('/api/', generalLimiter);
+
+// Apply auth rate limiter to auth routes only
+const authRoutes = ['/api/auth/login', '/api/auth/register'];
+authRoutes.forEach(route => {
+  app.use(route, authLimiter);
+});
+
+// Apply GPU operation rate limiter to GPU routes
+const gpuRoutes = ['/api/gpu/*'];
+gpuRoutes.forEach(route => {
+  app.use(route, gpuLimiter);
+});
 
 // Prometheus metrics setup
 const { 
@@ -80,14 +97,33 @@ app.use((req, res, next) => {
 });
 // Middleware
 // CORS configuration - allow specific origins from environment variable for security
+// Default to restricted origin list in production, allow specific origins in development
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(origin => origin)
+  : process.env.NODE_ENV !== 'production' 
+    ? ['http://localhost:3000', 'http://localhost:3001'] 
+    : undefined; // undefined means no origins allowed in production without config
+
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : false,
+  origin: allowedOrigins,
   credentials: true,
+  // Explicitly disable methods that are rarely needed
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['X-Correlation-Id'],
+  // Cache preflight response for 24 hours
+  maxAge: 86400,
+  // Enable CORS preflight handler
+  optionsSuccessStatus: 204
+};
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
 app.use(morgan('combined'));
 app.use(express.json());
+
+// NEW: Global error handling middleware - must be placed after all other middleware
+app.use(errorMiddleware);
 
 // Blackwell GPU Health Check
 /**
@@ -113,9 +149,10 @@ app.use(express.json());
  *                 memoryUsage:
  *                   type: object
  */
-app.get('/api/gpu/health', async (req, res) => {
+app.get('/api/gpu/health', validateQuery(healthCheckSchema), wrapAsync(async (req, res) => {
   try {
-    const gpuStats = gpuInference.getGPUStats();
+    const includeStats = req.query.includeStats;
+    const gpuStats = gpuInference.getGPUStats(includeStats);
     res.json({
       status: 'healthy',
       blackwellDetected: gpuStats.blackwellDetected,
@@ -168,7 +205,7 @@ app.get('/api/gpu/health', async (req, res) => {
  *       404:
  *         description: Model not found
  */
-app.post('/api/gpu/predict/:modelName', async (req, res) => {
+app.post('/api/gpu/predict/:modelName', validateParams(joi.object({ modelName: joi.string().alphanum().min(1).max(50) })), wrapAsync(async (req, res) => {
   try {
     const { modelName } = req.params;
     
@@ -212,7 +249,10 @@ app.post('/api/gpu/predict/:modelName', async (req, res) => {
     const prediction = await gpuInference.predict(modelName, input);
     res.json({ prediction });
   } catch (error) {
-    res.status(500).json({ error: 'Prediction failed', details: error.message });
+    res.status(500).json({ error: 'Model validation failed', details: error.message });
+  }
+  } catch (error) {
+    res.status(500).json({ error: 'Outer error', details: error.message });
   }
 });
 
@@ -253,7 +293,7 @@ app.post('/api/gpu/predict/:modelName', async (req, res) => {
  *       400:
  *         description: Bad request - validation error
  */
-app.post('/api/gpu/batch-predict/:modelName', async (req, res) => {
+app.post('/api/gpu/batch-predict/:modelName', validateParams(joi.object({ modelName: joi.string().alphanum().min(1).max(50) }), wrapAsync(async (req, res) => {
   try {
     const { modelName } = req.params;
     const { inputs } = req.body;
@@ -367,28 +407,57 @@ app.get('/', (req, res) => {
   });
 });
 
-// Database connection - FIX: removed deprecated Mongoose 7+ options and added retry
+// Matrix multiply route with input validation
+app.post('/api/gpu/matrix-multiply', validateRequest(matrixMultiplySchema), wrapAsync(async (req, res) => {
+  try {
+    const { matrixA, matrixB } = req.body;
+
+    // Additional dimension validation
+    if (matrixA[0].length !== matrixB.length) {
+      return res.status(400).json({
+        error: 'Dimension mismatch: matrixA columns must equal matrixB rows'
+      });
+    }
+
+    const result = await gpuInference.matrixMultiply(matrixA, matrixB);
+    res.json({ result });
+  } catch (error) {
+    console.error('Matrix multiply error:', error.message);
+    res.status(500).json({ error: 'Matrix multiplication failed', details: error.message });
+  }
+});
+
+// Database connection - FIX: Mongoose 7+ defaults, no deprecated options
 let mongooseConnected = false;
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nova-blocks')
+// Mongoose 7+ removed need for explicit useNewUrlParser/useUnifiedTopology
+// These options are now defaults and causing deprecation warnings
+const mongooseConnectOptions = {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  family: 4, // Use IPv4, skip IPv6
+};
+
+// Initial connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nova-blocks', mongooseConnectOptions)
   .then(() => {
     mongooseConnected = true;
-    console.log('Connected to MongoDB');
+    logger.info('✅ Connected to MongoDB');
   })
   .catch(err => {
-    console.error('MongoDB connection error:', err);
+    logger.error('❌ MongoDB connection error:', err.message);
   });
 
 // Retry connection after 5 seconds if not connected
 const retryInterval = setInterval(() => {
   if (!mongooseConnected) {
-    mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nova-blocks')
+    mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nova-blocks', mongooseConnectOptions)
       .then(() => {
         mongooseConnected = true;
-        console.log('Reconnected to MongoDB');
+        logger.info('✅ Reconnected to MongoDB');
       })
       .catch(err2 => {
-        console.error('MongoDB reconnection failed:', err2);
+        logger.error('❌ MongoDB reconnection failed:', err2.message);
       });
   }
 }, 5000);

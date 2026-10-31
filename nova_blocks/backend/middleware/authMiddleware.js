@@ -6,6 +6,12 @@ if (!process.env.JWT_SECRET) {
     process.exit(1);
 }
 
+// JWT verification options - include explicit expiration check
+const jwtVerifyOptions = {
+    ignoreExpiration: false,
+    // The expiresIn claim is automatically checked by jwt.verify
+};
+
 const authMiddleware = (req, res, next) => {
     // Extract token from Authorization header - handle Bearer token format
     let token = req.headers['authorization'];
@@ -20,8 +26,21 @@ const authMiddleware = (req, res, next) => {
         token = token.substring(7);
     }
     
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET, jwtVerifyOptions, (err, decoded) => {
         if (err) {
+            // Specific error handling for token expiration
+            if (err.name === 'TokenExpiredError') {
+                console.error(`Token expired at ${req.method} ${req.url}`);
+                return res.status(401).json({ message: 'Token has expired' });
+            }
+            if (err.name === 'JsonWebTokenError') {
+                console.error(`Invalid token format at ${req.method} ${req.url}`, err.message);
+                return res.status(401).json({ message: 'Invalid token format' });
+            }
+            if (err.name === 'NotBeforeError') {
+                console.error(`Token not yet valid at ${req.method} ${req.url}`);
+                return res.status(401).json({ message: 'Token not yet valid' });
+            }
             console.error(`Unauthorized access attempt: Invalid token at ${req.method} ${req.url}`, err.message);
             return res.status(401).json({ message: 'Unauthorized' });
         }
