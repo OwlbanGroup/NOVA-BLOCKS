@@ -117,15 +117,41 @@ class BlackwellGPUInference {
 
     // Blackwell-accelerated matrix operations
     async matrixMultiply(a, b) {
-        const gpuKernel = this.gpu.createKernel(function(a, b) {
+        // Validate input dimensions for matrix multiplication
+        if (!a || !a.length || !a[0] || !a[0].length) {
+          throw new Error('Invalid input matrix A: must be a non-empty 2D array');
+        }
+        if (!b || !b.length || !b[0] || !b[0].length) {
+          throw new Error('Invalid input matrix B: must be a non-empty 2D array');
+        }
+        // For valid matrix multiplication A × B:
+        // A has dimensions [m × n], B has dimensions [n × p]
+        // Result has dimensions [m × p]
+        // Here: a = [m × n], b = [n × p], result = [m × p]
+        const n = a[0].length; // columns of A = rows of B
+        if (b.length !== n) {
+          throw new Error(`Dimension mismatch: A has ${n} columns but B has ${b.length} rows. Columns of A must equal rows of B.`);
+        }
+        
+        const kernel = this.gpu.createKernel(function(a, b, size) {
             let sum = 0;
-            for (let i = 0; i < this.constants.size; i++) {
+            for (let i = 0; i < size; i++) {
                 sum += a[this.thread.y][i] * b[i][this.thread.x];
             }
             return sum;
-        }).setOutput([b[0].length, a.length]);
-
-        const result = gpuKernel(a, b);
+        }, {
+            constants: ['size']
+        });
+        
+        kernel.setConstants({ size: n });
+        const result = [];
+        // Result has dimensions [b[0].length, a.length] = [p, m]
+        for (let y = 0; y < a.length; y++) {
+            result[y] = [];
+            for (let x = 0; x < b[0].length; x++) {
+                result[y][x] = kernel(a, b, n);
+            }
+        }
         return result;
     }
 
