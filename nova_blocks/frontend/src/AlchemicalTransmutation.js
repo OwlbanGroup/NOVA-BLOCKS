@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios'; // Importing axios for API calls
+import axiosInstance from './axiosInstance'; // Import configured axios instance
 import './AlchemicalTransmutation.css'; // Importing CSS for styling
 
 const AlchemicalTransmutation = () => {
@@ -8,7 +8,7 @@ const AlchemicalTransmutation = () => {
     useEffect(() => {
         const fetchColors = async () => {
             try {
-                const response = await axios.get('/api/golds/colors'); // Assuming an endpoint for colors
+                const response = await axiosInstance.get('/golds/colors'); // Using axiosInstance with baseURL /api
                 setColors(response.data);
             } catch (error) {
                 console.error('Error fetching colors:', error);
