@@ -212,9 +212,9 @@ app.post('/api/gpu/predict/:modelName', async (req, res) => {
     const prediction = await gpuInference.predict(modelName, input);
     res.json({ prediction });
   } catch (error) {
-    res.status(500).json({ error: 'Model validation failed', details: error.message });
+    res.status(500).json({ error: 'Prediction failed', details: error.message });
   }
-}
+});
 
 // Blackwell Batch Prediction Endpoint
 /**
